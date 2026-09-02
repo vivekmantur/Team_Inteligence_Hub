@@ -1,0 +1,22 @@
+# Build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+
+# Local configuration — never commit real ids, secrets, or connection strings.
+# Use `dotnet user-secrets` for development instead.
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.local.json
+*.local
+secrets.json
+.env
+.env.*

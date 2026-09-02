@@ -1,0 +1,66 @@
+# ============================================================================
+# Team_Intelligence_Hub — root .gitignore
+# Covers both TeamIntelligenceHub.Backend (.NET) and AppSource 7-23 (Vite/React).
+# Patterns with no leading slash match at any depth, so one file here is enough
+# even though each subproject also carries its own local .gitignore.
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# Secrets — never commit these, regardless of which folder they're in.
+# This project's own CLAUDE.md flags TeamIntelligenceHub.API/appsettings.json
+# (the base file, not just its Development/Local variants) as holding real
+# connection strings and API keys, since dotnet user-secrets isn't in use for
+# every value here — so the base file is included, not just the usual
+# appsettings.*.json pattern.
+# ---------------------------------------------------------------------------
+appsettings.json
+appsettings.*.json
+!appsettings.*.example.json
+secrets.json
+.env
+.env.*
+!.env.example
+*.local
+
+# ---------------------------------------------------------------------------
+# .NET (TeamIntelligenceHub.Backend)
+# ---------------------------------------------------------------------------
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+TestResults/
+.vs/
+
+# ---------------------------------------------------------------------------
+# Node / Vite (AppSource 7-23)
+# ---------------------------------------------------------------------------
+node_modules/
+dist/
+dist-ssr/
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ---------------------------------------------------------------------------
+# Editors / IDEs
+# ---------------------------------------------------------------------------
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.sw?
+
+# ---------------------------------------------------------------------------
+# OS junk
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db

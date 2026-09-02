@@ -1,0 +1,11 @@
+{
+  "appId": "1d9e6d8e-08f6-4179-af19-703e72042174",
+  "isSaved": true,
+  "lastSavedTime": "2026-07-22T17:04:07.060797Z",
+  "isPublishedWithValidPackage": true,
+  "hasBuildErrors": false,
+  "lastBuildTime": "2026-07-22T17:03:58.2770661Z",
+  "isCurrentVersionPublished": false,
+  "isPlanOnly": false,
+  "$schema": "./container-app-state.schema.json"
+}

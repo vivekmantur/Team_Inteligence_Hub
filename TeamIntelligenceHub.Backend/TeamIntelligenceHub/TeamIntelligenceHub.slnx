@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Claude.md" />
+  </Folder>
+  <Project Path="TeamIntelligenceHub.API/TeamIntelligenceHub.API.csproj" />
+  <Project Path="TeamIntelligenceHub.Application/TeamIntelligenceHub.Application.csproj" />
+  <Project Path="TeamIntelligenceHub.Domain/TeamIntelligenceHub.Domain.csproj" />
+  <Project Path="TeamIntelligenceHub.Infrastructure/TeamIntelligenceHub.Infrastructure.csproj" />
+  <Project Path="TeamIntelligenceHub.Tests/TeamIntelligenceHub.Tests.csproj" />
+</Solution>

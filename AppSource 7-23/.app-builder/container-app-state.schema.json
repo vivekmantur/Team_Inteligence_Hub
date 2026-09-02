@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "type": "object",
+  "properties": {
+    "appId": {
+      "type": "string",
+      "description": "Unique identifier for the application"
+    },
+    "isSaved": {
+      "type": "boolean",
+      "description": "Indicates whether the current state has been saved",
+      "default": false
+    },
+    "lastSavedTime": {
+      "type": ["number", "null"],
+      "description": "Timestamp (epoch) of the last successful save operation",
+      "default": null
+    },
+    "isPublishedWithValidPackage": {
+      "type": "boolean",
+      "description": "Indicates whether the application is published with at least one valid package",
+      "default": false
+    },
+    "hasBuildErrors": {
+      "type": "boolean",
+      "description": "Indicates whether the last build encountered errors",
+      "default": false
+    },
+    "lastBuildTime": {
+      "type": ["number", "null"],
+      "description": "Timestamp (epoch) of the last build operation",
+      "default": null
+    },
+    "isCurrentVersionPublished": {
+      "type": "boolean",
+      "description": "Indicates whether the current version of the application is published",
+      "default": false
+    },
+    "isPlanOnly": {
+      "type": "boolean",
+      "description": "Indicates whether the application contains plan only.",
+      "default": false
+    }
+  },
+  "required": ["isSaved", "isPublishedWithValidPackage", "hasBuildErrors"]
+}
