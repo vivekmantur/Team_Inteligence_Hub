@@ -56,6 +56,10 @@ public static class DependencyInjection
         services.AddScoped<
             IContributionAttachmentService, ContributionAttachmentService>();
 
+        // Structured-data only for now — no Azure OpenAI dependency yet, unlike
+        // ICopilotService below. That lands in a later slice.
+        services.AddScoped<IContentGenerationService, ContentGenerationService>();
+
         // Bound from the "BlobStorage" section, which resolves from appsettings.json,
         // user secrets, or environment variables without a code change.
         services.Configure<BlobStorageOptions>(

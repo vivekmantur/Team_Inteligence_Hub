@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\TeamIntelligenceHub.API\TeamIntelligenceHub.API.csproj" />
     <ProjectReference Include="..\TeamIntelligenceHub.Application\TeamIntelligenceHub.Application.csproj" />
     <ProjectReference Include="..\TeamIntelligenceHub.Domain\TeamIntelligenceHub.Domain.csproj" />
   </ItemGroup>

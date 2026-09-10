@@ -1,15 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/system/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Sparkles, Wand2, Copy, RefreshCcw, Linkedin, FileText, Newspaper, BookOpen, Presentation, MessageCircle, Rocket, Search } from "lucide-react";
+import { Sparkles, Wand2, Copy, RefreshCcw, Linkedin, FileText, Newspaper, BookOpen, Presentation, MessageCircle, Rocket, Search, AlertTriangle, type LucideIcon } from "lucide-react";
 import { useGeneratedContent } from "@/hooks/use-generated-content";
 import type { GeneratedContent } from "@/data/mock";
 import { useInitiativesQuery, statusToLabel, type Initiative } from "@/hooks/use-initiatives-api";
+import {
+  useGenerateContent,
+  contentFormatToWire,
+  contentToneToWire,
+  contentAudienceToWire,
+  contentLengthToWire,
+  CONTENT_INSTRUCTIONS_MAX_LENGTH,
+  type ContentGenerationRequest,
+} from "@/hooks/use-content-generation";
 
-const contentTypes: { key: GeneratedContent["type"]; icon: any; blurb: string }[] = [
+const contentTypes: { key: GeneratedContent["type"]; icon: LucideIcon; blurb: string }[] = [
   { key: "LinkedIn Post", icon: Linkedin, blurb: "Social-ready hook + insight" },
   { key: "Newsletter", icon: Newspaper, blurb: "Internal digest for stakeholders" },
   { key: "Executive Summary", icon: FileText, blurb: "CEO-ready brief in seconds" },
@@ -23,54 +33,14 @@ const tones = ["Confident", "Inspirational", "Analytical", "Story-driven", "Play
 const audiences = ["Leadership", "Stakeholders", "Customers", "External", "Team"];
 const lengths = ["Short", "Medium", "Long"];
 
-function craftContent(type: GeneratedContent["type"], tone: string, audience: string, length: string, initiative: Initiative | null) {
-  const t = initiative?.name || "Role Hub adoption and Copilot impact this quarter";
-  const opener =
-    tone === "Confident"
-      ? "Here's what we shipped — and why it matters."
-      : tone === "Inspirational"
-      ? "This is what a team of storytellers can do in 90 days."
-      : tone === "Analytical"
-      ? "The data tells a clear story this quarter."
-      : tone === "Story-driven"
-      ? "Meet the team that reclaimed Fridays for the field."
-      : "Buckle up — the numbers are wild. ✨";
-
-  const stat = "12,480 hours saved, +34.7% Copilot growth, and 128K MAU on Role Hub.";
-
-  const closerByAudience: Record<string, string> = {
-    Leadership: "Next quarter: scale APAC playbook globally and double Customer Zero output.",
-    Stakeholders: "Ping us to plug this into your workstream — templates are ready.",
-    Customers: "Curious how this could work for your org? Let's talk.",
-    External: "Follow along as we scale this across the company. #ModernWork #Copilot",
-    Team: "Huge shoutout to everyone who made this quarter unforgettable. 💜",
-  };
-
-  const bulletCore = [
-    `✨ ${stat}`,
-    `📈 Role Hub adoption ahead of plan in APAC and EMEA (Initiative: ${t}).`,
-    `💬 Customers say: “Role Hub is the single pane of glass we needed.”`,
-  ];
-
-  const bullets = length === "Short" ? bulletCore.slice(0, 2) : length === "Long" ? [...bulletCore, `🎯 Focus for FY26: personalized adoption at scale.`, `🤝 4 new Customer Zero proof points ready to publish.`] : bulletCore;
-
-  switch (type) {
-    case "LinkedIn Post":
-      return `${opener}\n\n${bullets.join("\n")}\n\n${closerByAudience[audience] ?? ""}\n\n#Copilot #ChangeManagement #Adoption`;
-    case "Viva Engage Post":
-      return `${opener}\n\n${bullets.join("\n")}\n\n${closerByAudience.Team}`;
-    case "Newsletter":
-      return `Subject: This quarter in Team Intelligence\n\nHi team,\n\n${opener} ${stat}\n\nHighlights:\n- ${bullets.join("\n- ")}\n\n${closerByAudience[audience] ?? ""}\n\n— The Adoption team`;
-    case "Executive Summary":
-      return `EXECUTIVE SUMMARY · ${audience.toUpperCase()}\n\nHeadline: ${opener}\n\nBy the numbers: ${stat}\n\nWhat's working: Role Hub personalization, Copilot in Field, sentiment listening.\nWhat's next: ${closerByAudience.Leadership}`;
-    case "QBR Slide":
-      return `QBR · FY26 Q3\n\nWins\n• ${bullets.join("\n• ")}\n\nMetrics\n• ${stat}\n\nRoadmap\n• ${closerByAudience.Leadership}`;
-    case "Blog":
-      return `${opener}\n\nOver the last quarter, our team leaned into a single hypothesis: personalization scales adoption. And the data agrees.\n\n${stat}\n\nIn this post, we break down three moves that unlocked results — and why we're doubling down on Customer Zero storytelling next quarter.\n\n${closerByAudience[audience] ?? ""}`;
-    case "Case Study":
-      return `CASE STUDY · ${t}\n\nProblem: Adoption blockers were only visible quarterly.\nSolution: Continuous listening + Copilot summarization.\nImpact: ${stat}\n\nQuote: “Role Hub is the single pane of glass we needed.” — CVP, Modern Work\n\n${closerByAudience[audience] ?? ""}`;
-  }
-}
+/**
+ * One prior successful instruction/output pair in this Content Studio session — mirrors
+ * the shape of ContentGenerationRequestDto.PreviousTurns' items. Kept in component-local
+ * state (never the shared `memory` singleton, which deliberately survives navigation),
+ * so it disappears for free when this page unmounts — e.g. on sign-out, where
+ * RequireAuth unmounts routed children.
+ */
+type SessionTurn = { instruction: string; output: string };
 
 export default function ContentStudioPage() {
   const [params] = useSearchParams();
@@ -80,10 +50,14 @@ export default function ContentStudioPage() {
   const [audience, setAudience] = useState(audiences[0]);
   const [length, setLength] = useState(lengths[1]);
   const [initiative, setInitiative] = useState<Initiative | null>(null);
-  const [output, setOutput] = useState<string>("");
-  const [generating, setGenerating] = useState(false);
+  const [instructions, setInstructions] = useState("");
+  const [lastRequest, setLastRequest] = useState<
+    (ContentGenerationRequest & { initiativeId: number }) | null
+  >(null);
+  const [sessionTurns, setSessionTurns] = useState<SessionTurn[]>([]);
   const { items, add } = useGeneratedContent();
   const { data: initiatives = [], isLoading: initiativesLoading } = useInitiativesQuery();
+  const generation = useGenerateContent();
 
   useEffect(() => {
     if (params.get("type")) setType(params.get("type") as GeneratedContent["type"]);
@@ -91,34 +65,113 @@ export default function ContentStudioPage() {
 
   const currentMeta = useMemo(() => contentTypes.find((c) => c.key === type)!, [type]);
 
-  const handleGenerate = () => {
-    if (!initiative) return;
-    setGenerating(true);
-    setOutput("");
-    const full = craftContent(type, tone, audience, length, initiative);
-    let i = 0;
-    const timer = setInterval(() => {
-      i += Math.max(2, Math.round(full.length / 60));
-      setOutput(full.slice(0, i));
-      if (i >= full.length) {
-        clearInterval(timer);
-        setGenerating(false);
-        add({
-          type,
-          title: initiative.name.slice(0, 60),
-          tone,
-          audience,
-          length,
-          preview: full.slice(0, 140) + "…",
-        });
-      }
-    }, 30);
+  const output = generation.data?.content ?? "";
+
+  /**
+   * Session identity is the selected Initiative plus the backend format value — not the
+   * UI label, since that's what the request and response both carry. sessionKeyRef always
+   * holds the *live* active key: it's read inside the mutation's onSuccess below, whose
+   * own closure is frozen at submit time, so a late response arriving after the user has
+   * since switched Initiative or format can still be detected as stale and skipped
+   * (rule 16) rather than joining the wrong session.
+   *
+   * Writing to the ref and resetting state directly in the render body — rather than in a
+   * useEffect — is the React-documented way to reset state when a derived value changes:
+   * the session clears immediately, with no extra render showing stale turns first.
+   */
+  const sessionKeyRef = useRef<string | null>(null);
+  const activeSessionKey = initiative ? `${initiative.id}:${contentFormatToWire(type)}` : null;
+
+  if (sessionKeyRef.current !== activeSessionKey) {
+    sessionKeyRef.current = activeSessionKey;
+    setSessionTurns([]);
+  }
+
+  /**
+   * Shared by both Generate (submits the currently-selected Initiative) and Retry
+   * (replays the exact Initiative and request that just failed, which may no longer
+   * match the picker) — one guard against firing while a request is already in flight,
+   * one place lastRequest gets updated.
+   */
+  const submit = (initiativeId: number, request: ContentGenerationRequest) => {
+    if (generation.isPending) return;
+
+    const submittedRequest = { initiativeId, ...request };
+    // Captured now, not read from the `instructions` field later — by the time this
+    // request resolves the user may have already typed something new for the next one.
+    const submittedInstruction = request.instructions ?? "";
+    setLastRequest(submittedRequest);
+    generation.mutate(submittedRequest, {
+      onSuccess: (result) => {
+        // Append exactly the one new turn — never previousTurns again — and only if this
+        // response's Initiative and format still match what's actively selected right
+        // now (sessionKeyRef.current is live, unlike this closure's own captured values).
+        const resultSessionKey = `${result.initiativeId}:${result.format}`;
+        if (sessionKeyRef.current === resultSessionKey) {
+          setSessionTurns((prev) => [
+            ...prev,
+            { instruction: submittedInstruction, output: result.content },
+          ]);
+        }
+
+        // Only recorded under the currently-selected Initiative's name — if the picker
+        // has since moved on (e.g. this success came from a Retry against an older
+        // selection), skip rather than label the entry with the wrong Initiative.
+        if (initiative && initiative.id === initiativeId) {
+          add({
+            type,
+            title: initiative.name.slice(0, 60),
+            tone,
+            audience,
+            length,
+            preview: result.content.slice(0, 140) + (result.content.length > 140 ? "…" : ""),
+          });
+        }
+      },
+    });
   };
 
-  const handleCopy = () => {
-    if (!output) return;
-    navigator.clipboard?.writeText(output).catch(() => {});
+  const handleGenerate = () => {
+    if (!initiative) return;
+
+    submit(initiative.id, {
+      format: contentFormatToWire(type),
+      tone: contentToneToWire(tone),
+      audience: contentAudienceToWire(audience),
+      length: contentLengthToWire(length),
+      instructions: instructions.trim() || undefined,
+      previousTurns: sessionTurns.length > 0 ? sessionTurns : undefined,
+    });
   };
+
+  const handleRetry = () => {
+    if (!lastRequest) return;
+
+    // Replays the exact original request — including its previousTurns exactly as they
+    // were at failure time — so a retry can never duplicate the failed turn (it was
+    // never appended) or drop history that existed before the failure.
+    const { initiativeId, ...request } = lastRequest;
+    submit(initiativeId, request);
+  };
+
+  const handleCopy = async () => {
+    if (!output) return;
+    try {
+      await navigator.clipboard.writeText(output);
+      setSessionTurns([]);
+    } catch {
+      // Clipboard write failed, or the API is unavailable — preserve the session and
+      // show no false success.
+    }
+  };
+
+  const liveStatus = generation.isPending
+    ? "Generating content…"
+    : generation.isError
+      ? (generation.error?.message ?? "Content generation failed.")
+      : generation.isSuccess
+        ? "Content generated."
+        : "";
 
   return (
     <div className="space-y-6">
@@ -127,6 +180,13 @@ export default function ContentStudioPage() {
         title="AI Content Studio"
         description="Generate executive-ready content grounded in your team's Initiatives, metrics, and stories."
       />
+
+      {/* Screen-reader-only announcement of generation state changes — the visual states
+          below (loading placeholder, output, error box) carry the same information for
+          sighted users. */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {liveStatus}
+      </div>
 
       <div className="grid xl:grid-cols-[1.1fr_1.4fr] gap-4">
         {/* Config */}
@@ -187,13 +247,30 @@ export default function ContentStudioPage() {
                 className="mt-1.5"
               />
             </div>
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">
+                  Instructions
+                </label>
+                <span className="text-[10px] text-muted-foreground">
+                  {instructions.length}/{CONTENT_INSTRUCTIONS_MAX_LENGTH}
+                </span>
+              </div>
+              <Textarea
+                value={instructions}
+                onChange={(e) => setInstructions(e.target.value.slice(0, CONTENT_INSTRUCTIONS_MAX_LENGTH))}
+                placeholder="Anything Copilot should focus on, avoid, or keep in mind — e.g. “mention the APAC rollout” or “keep it under 100 words”…"
+                rows={3}
+                className="mt-1.5 rounded-xl bg-white/70 border-white/60 resize-none"
+              />
+            </div>
             <Button
               onClick={handleGenerate}
-              disabled={generating || !initiative}
+              disabled={generation.isPending || !initiative}
               className="w-full h-11 rounded-xl bg-copilot-gradient text-white shadow-md"
             >
               <Wand2 className="size-4" />
-              {generating ? "Generating…" : "Generate with Copilot"}
+              {generation.isPending ? "Generating…" : "Generate with Copilot"}
             </Button>
           </div>
         </div>
@@ -213,7 +290,13 @@ export default function ContentStudioPage() {
                 </div>
               </div>
               <div className="flex gap-1.5">
-                <Button variant="ghost" size="sm" onClick={handleGenerate} className="rounded-lg">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleGenerate}
+                  disabled={generation.isPending}
+                  className="rounded-lg"
+                >
                   <RefreshCcw className="size-3.5" /> Regenerate
                 </Button>
                 <Button variant="ghost" size="sm" onClick={handleCopy} className="rounded-lg">
@@ -223,15 +306,41 @@ export default function ContentStudioPage() {
             </div>
 
             <div className="relative mt-4">
-              {!output && !generating ? (
+              {generation.isPending ? (
+                <div className="text-center py-16 text-muted-foreground text-sm">
+                  <Sparkles className="size-6 mx-auto mb-2 text-fuchsia-500 animate-sparkle" />
+                  Generating with Copilot…
+                </div>
+              ) : generation.isError ? (
+                <div className="rounded-xl bg-rose-500/5 border border-rose-500/20 p-4">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="size-4 text-rose-600 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-rose-700">
+                        Generation failed
+                      </div>
+                      <div className="text-[13px] text-muted-foreground mt-0.5">
+                        {generation.error?.message || "Content generation is temporarily unavailable. Please try again."}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRetry}
+                        className="mt-3 rounded-lg"
+                      >
+                        <RefreshCcw className="size-3.5" /> Retry
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : !output ? (
                 <div className="text-center py-16 text-muted-foreground text-sm">
                   <Sparkles className="size-6 mx-auto mb-2 text-fuchsia-500 animate-sparkle" />
                   Pick a format and hit <b>Generate</b> to see Copilot draft your content.
                 </div>
               ) : (
                 <pre className="whitespace-pre-wrap font-sans text-[14px] leading-relaxed rounded-xl bg-white/80 p-4 min-h-[280px]">
-{output}
-                  {generating && <span className="inline-block w-1.5 h-4 bg-primary/70 animate-pulse ml-0.5 align-middle" />}
+                  {output}
                 </pre>
               )}
             </div>
