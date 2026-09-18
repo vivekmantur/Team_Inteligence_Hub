@@ -15,15 +15,21 @@ import { PageHeader } from "@/components/system/PageHeader";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAddContribution } from "@/components/contribution/ContributionContext";
+import { useBackendUser } from "@/hooks/use-backend-user";
+import { useMyOpenTasksCount } from "@/hooks/use-initiative-tasks";
+import { useReadinessInsights, lifecycleStageToLabel, healthToLabel } from "@/hooks/use-initiatives-api";
+import { useMyInitiatives } from "@/hooks/use-my-initiatives";
+import { useMySubmittedEvidenceThisMonthCount } from "@/hooks/use-contributions";
 import {
   attentionStats,
   thisWeekSignals,
-  myInitiatives,
   recentActivity,
-  attentionHighlights,
   upcomingDeadlines,
   type WeeklySignalSeverity,
 } from "@/data/mock";
+
+/** Still mock: there's no scheduled-report concept in the Domain model yet. */
+const leadershipReportsStat = attentionStats.find((s) => s.id === "reports")!;
 
 const statIcons = {
   capacity: Users,
@@ -55,6 +61,36 @@ const statusBadge: Record<string, string> = {
 export default function HomePage() {
   const navigate = useNavigate();
   const { openAddContribution } = useAddContribution();
+  const { data: backendUser } = useBackendUser();
+  const { count: openTasksCount } = useMyOpenTasksCount();
+  const { data: readiness } = useReadinessInsights();
+  const { data: myInitiatives, isLoading: isLoadingMyInitiatives } = useMyInitiatives();
+  const { count: submittedEvidenceCount } = useMySubmittedEvidenceThisMonthCount();
+
+  const onTrackInitiativesCount = myInitiatives.filter((mi) => mi.health === "OnTrack").length;
+  const highImpactChangesCount = myInitiatives.filter((mi) => mi.changeImpact === "High").length;
+
+  const stats = [
+    {
+      id: "capacity",
+      label: "Team Capacity",
+      value: `${Math.round(backendUser?.totalAllocationAcrossInitiatives ?? 0)}%`,
+      caption: "Your Allocation summed across every Initiative you're on",
+    },
+    leadershipReportsStat,
+    {
+      id: "risks",
+      label: "Risks / Attention",
+      value: (readiness?.atRisk ?? 0) + (readiness?.needsAttention ?? 0),
+      caption: "Initiatives needing attention or at risk, company-wide",
+    },
+    {
+      id: "actions",
+      label: "My Open Actions",
+      value: openTasksCount,
+      caption: "Tasks assigned to you that aren't Done yet",
+    },
+  ];
 
   const quickActions = [
     { label: "Review my Initiatives", icon: Rocket, onClick: () => navigate("/initiatives") },
@@ -90,7 +126,7 @@ export default function HomePage() {
 
       {/* Attention stats */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {attentionStats.map((s) => {
+        {stats.map((s) => {
           const Icon = statIcons[s.id as keyof typeof statIcons];
           return (
             <div key={s.id} className="glass rounded-2xl p-4">
@@ -176,30 +212,43 @@ export default function HomePage() {
               View all <ArrowUpRight className="size-3.5" />
             </Button>
           </div>
-          <ul className="mt-4 divide-y divide-black/5">
-            {myInitiatives.map((mi) => (
-              <li key={mi.id} className="py-3 flex items-center gap-3">
-                <div className="size-9 rounded-xl bg-gradient-to-br from-indigo-500/15 to-fuchsia-500/15 grid place-items-center shrink-0">
-                  <Rocket className="size-4 text-indigo-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{mi.name}</div>
-                  <div className="text-[11px] text-muted-foreground truncate">
-                    {mi.phase} · {mi.status} · {mi.impactedRoles} impacted roles
-                  </div>
-                </div>
-                <span
-                  className={cn(
-                    "text-[10px] font-semibold px-2 py-0.5 rounded-full hidden sm:inline-block",
-                    statusBadge[mi.status]
-                  )}
-                >
-                  {mi.status}
-                </span>
-                <span className="text-sm font-semibold w-10 text-right shrink-0">{mi.progress}%</span>
-              </li>
-            ))}
-          </ul>
+          {isLoadingMyInitiatives ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">Loading initiatives…</div>
+          ) : myInitiatives.length === 0 ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              You're not on any Initiatives yet.
+            </div>
+          ) : (
+            <ul className="mt-4 divide-y divide-black/5">
+              {myInitiatives.map((mi) => {
+                const healthLabel = healthToLabel(mi.health);
+                return (
+                  <li key={mi.id} className="py-3 flex items-center gap-3">
+                    <div className="size-9 rounded-xl bg-gradient-to-br from-indigo-500/15 to-fuchsia-500/15 grid place-items-center shrink-0">
+                      <Rocket className="size-4 text-indigo-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{mi.name}</div>
+                      <div className="text-[11px] text-muted-foreground truncate">
+                        {lifecycleStageToLabel(mi.lifecycleStage)} · {healthLabel} · {mi.impactedRolesCount} impacted roles
+                      </div>
+                    </div>
+                    <span
+                      className={cn(
+                        "text-[10px] font-semibold px-2 py-0.5 rounded-full hidden sm:inline-block",
+                        statusBadge[healthLabel]
+                      )}
+                    >
+                      {healthLabel}
+                    </span>
+                    <span className="text-sm font-semibold w-10 text-right shrink-0">
+                      {mi.progressPercent === null ? "—" : `${mi.progressPercent}%`}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
 
         <div className="glass rounded-2xl p-5">
@@ -230,16 +279,16 @@ export default function HomePage() {
           </p>
           <div className="mt-4 grid grid-cols-3 gap-3">
             <div>
-              <div className="text-2xl font-semibold tracking-tight">{attentionHighlights.onTrackInitiatives}</div>
+              <div className="text-2xl font-semibold tracking-tight">{onTrackInitiativesCount}</div>
               <div className="text-[11px] text-muted-foreground mt-0.5">On-track Initiatives</div>
             </div>
             <div>
-              <div className="text-2xl font-semibold tracking-tight">{attentionHighlights.highImpactChanges}</div>
+              <div className="text-2xl font-semibold tracking-tight">{highImpactChangesCount}</div>
               <div className="text-[11px] text-muted-foreground mt-0.5">High-impact changes</div>
             </div>
             <div>
-              <div className="text-2xl font-semibold tracking-tight">{attentionHighlights.submittedEvidence}</div>
-              <div className="text-[11px] text-muted-foreground mt-0.5">Submitted evidence</div>
+              <div className="text-2xl font-semibold tracking-tight">{submittedEvidenceCount}</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5">Submitted evidence (this month)</div>
             </div>
           </div>
         </div>

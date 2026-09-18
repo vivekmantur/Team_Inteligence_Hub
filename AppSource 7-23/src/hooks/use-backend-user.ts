@@ -8,9 +8,13 @@ export type BackendUser = {
   entraObjectId: string;
   email: string;
   displayName: string;
+  /** Free-text role/title this person set for themselves, shown on the Team page. */
+  appRole: string;
   isActive: boolean;
   createdAt: string;
   lastLoginAt: string | null;
+  /** This person's Allocation summed across every Initiative they belong to. */
+  totalAllocationAcrossInitiatives: number;
 };
 
 export const backendUserQueryKey = ["backend-user", "me"] as const;

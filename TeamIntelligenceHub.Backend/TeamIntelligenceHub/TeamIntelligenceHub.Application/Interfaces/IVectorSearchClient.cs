@@ -29,7 +29,20 @@ public class RetrievedChunk
 /// </remarks>
 public interface IVectorSearchClient
 {
+    /// <param name="queryVector">The embedded query to search near.</param>
+    /// <param name="searchText">
+    /// When supplied, the implementation runs a hybrid search — keyword relevance (BM25)
+    /// fused with vector relevance — instead of vector search alone. Null preserves the
+    /// original vector-only behavior.
+    /// </param>
+    /// <param name="sourceBlobName">
+    /// When supplied, restricts the search to the single document with this name/path,
+    /// instead of the whole index. What "restrict" means concretely (which index field to
+    /// filter on) is an implementation detail the caller does not need to know.
+    /// </param>
     Task<IReadOnlyList<RetrievedChunk>> SearchAsync(
         ReadOnlyMemory<float> queryVector,
+        string? searchText = null,
+        string? sourceBlobName = null,
         CancellationToken cancellationToken = default);
 }

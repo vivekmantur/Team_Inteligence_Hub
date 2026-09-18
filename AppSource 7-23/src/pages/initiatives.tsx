@@ -5,12 +5,22 @@ import { deliverables } from "@/data/mock";
 import { useInitiatives } from "@/components/initiative/InitiativeContext";
 import {
   useInitiativesQuery,
+  useInitiativeDeletionImpact,
+  useDeleteInitiative,
   statusToLabel,
   focusAreaToLabel,
 } from "@/hooks/use-initiatives-api";
 import { formatDistanceToNow } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Search,
   Rocket,
@@ -21,6 +31,8 @@ import {
   ListChecks,
   ArrowRight,
   AlertTriangle,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAddContribution } from "@/components/contribution/ContributionContext";
@@ -33,6 +45,7 @@ export default function InitiativesPage() {
   const { openAddContribution } = useAddContribution();
   const { teamByInitiative, tasksByInitiative } = useInitiatives();
   const navigate = useNavigate();
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   // The API is the source of truth. Records created in this session are already
   // included, because creating one invalidates this query.
@@ -230,6 +243,14 @@ export default function InitiativesPage() {
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Button
+                    onClick={() => navigate(`/initiatives/${p.id}/edit`)}
+                    size="sm"
+                    variant="outline"
+                    className="rounded-lg bg-white/80"
+                  >
+                    <Pencil className="size-3.5" /> Edit
+                  </Button>
+                  <Button
                     onClick={() => openAddContribution({ initiativeId: p.id })}
                     size="sm"
                     variant="outline"
@@ -244,12 +265,121 @@ export default function InitiativesPage() {
                   >
                     Open <ArrowRight className="size-3.5" />
                   </Button>
+                  <Button
+                    onClick={() => setPendingDelete({ id: p.id, name: p.name })}
+                    size="sm"
+                    variant="outline"
+                    className="rounded-lg bg-white/80 text-rose-600 hover:bg-rose-50 hover:text-rose-700 px-2.5"
+                    aria-label={`Delete ${p.name}`}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
                 </div>
               </div>
             );
           })}
         </div>
       )}
+
+      <DeleteInitiativeDialog
+        initiative={pendingDelete}
+        onClose={() => setPendingDelete(null)}
+      />
     </div>
+  );
+}
+
+/**
+ * Loads real counts of everything a delete would also remove — Contributions, Tasks,
+ * Activity, Team members — before letting the user confirm, rather than a generic
+ * "this cannot be undone" warning with no idea what "this" actually touches.
+ */
+function DeleteInitiativeDialog({
+  initiative,
+  onClose,
+}: {
+  initiative: { id: string; name: string } | null;
+  onClose: () => void;
+}) {
+  const numericId = initiative && /^\d+$/.test(initiative.id) ? Number(initiative.id) : null;
+  const { data: impact, isLoading: isLoadingImpact } = useInitiativeDeletionImpact(numericId);
+  const deleteInitiative = useDeleteInitiative();
+
+  if (!initiative) return null;
+
+  const impactRows = impact
+    ? [
+        { label: "Contributions", count: impact.contributionCount },
+        { label: "Tasks", count: impact.taskCount },
+        { label: "Activity entries", count: impact.activityCount },
+        { label: "Team members", count: impact.teamMemberCount },
+      ].filter((row) => row.count > 0)
+    : [];
+
+  const handleConfirm = () => {
+    if (numericId === null) return;
+    deleteInitiative.mutate(numericId, { onSuccess: onClose });
+  };
+
+  return (
+    <Dialog open={!!initiative} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <span className="size-8 rounded-lg bg-rose-500/10 text-rose-600 grid place-items-center">
+              <Trash2 className="size-4" />
+            </span>
+            Delete Initiative?
+          </DialogTitle>
+          <DialogDescription>
+            <span className="font-medium text-foreground">{initiative.name}</span> will be
+            permanently deleted. This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+
+        {isLoadingImpact ? (
+          <div className="rounded-xl bg-white/60 border border-white/70 p-3 text-[12px] text-muted-foreground">
+            Checking what else this would remove…
+          </div>
+        ) : impactRows.length > 0 ? (
+          <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 text-[12px] text-amber-800">
+            <div className="font-semibold flex items-center gap-1.5">
+              <AlertTriangle className="size-3.5" /> This will also delete:
+            </div>
+            <ul className="mt-1.5 space-y-0.5">
+              {impactRows.map((row) => (
+                <li key={row.label}>
+                  {row.count} {row.label}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-1.5">
+              Any attached documents are removed too — including their file in storage.
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl bg-white/60 border border-white/70 p-3 text-[12px] text-muted-foreground">
+            Nothing else is attached to this Initiative.
+          </div>
+        )}
+
+        {deleteInitiative.error && (
+          <div className="text-[12px] text-rose-700">{deleteInitiative.error.message}</div>
+        )}
+
+        <DialogFooter>
+          <Button variant="ghost" className="rounded-xl" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirm}
+            disabled={isLoadingImpact || deleteInitiative.isPending}
+            className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white"
+          >
+            {deleteInitiative.isPending ? "Deleting…" : "Delete Initiative"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

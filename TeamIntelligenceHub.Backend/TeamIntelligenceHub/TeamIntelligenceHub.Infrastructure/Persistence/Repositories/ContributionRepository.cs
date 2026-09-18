@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TeamIntelligenceHub.Application.Interfaces.Repositories;
 using TeamIntelligenceHub.Domain.Entities;
+using TeamIntelligenceHub.Domain.Enums;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Repositories;
 
@@ -30,7 +31,8 @@ public class ContributionRepository : IContributionRepository
             .Include(x => x.Risk)
                 .ThenInclude(r => r!.OwnerUser)
             .Include(x => x.AiPractice)
-            .Include(x => x.CustomerStory);
+            .Include(x => x.CustomerStory)
+            .Include(x => x.Testimonial);
     }
 
     public async Task<Contribution?> GetByIdAsync(int id)
@@ -43,6 +45,22 @@ public class ContributionRepository : IContributionRepository
         // Newest first: a feed is read from the top.
         return await WithDetail()
             .Where(x => x.InitiativeId == initiativeId)
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<List<Contribution>> GetCustomerStoriesAsync()
+    {
+        return await WithDetail()
+            .Where(x => x.CustomerStory != null && x.Status == ContributionStatus.Submitted)
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<List<Contribution>> GetTestimonialsAsync()
+    {
+        return await WithDetail()
+            .Where(x => x.Testimonial != null && x.Status == ContributionStatus.Submitted)
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync();
     }
@@ -127,13 +145,16 @@ public class ContributionRepository : IContributionRepository
         ContributionMetric? metric,
         ContributionRisk? risk,
         ContributionAiPractice? aiPractice,
-        ContributionCustomerStory? customerStory)
+        ContributionCustomerStory? customerStory,
+        ContributionTestimonial? testimonial)
     {
         await UpsertAsync(_context.ContributionMetrics, contributionId, metric);
         await UpsertAsync(_context.ContributionRisks, contributionId, risk);
         await UpsertAsync(_context.ContributionAiPractices, contributionId, aiPractice);
         await UpsertAsync(
             _context.ContributionCustomerStories, contributionId, customerStory);
+        await UpsertAsync(
+            _context.ContributionTestimonials, contributionId, testimonial);
 
         await _context.SaveChangesAsync();
     }

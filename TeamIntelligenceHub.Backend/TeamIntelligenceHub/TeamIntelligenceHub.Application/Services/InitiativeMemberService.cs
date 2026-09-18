@@ -36,8 +36,12 @@ public class InitiativeMemberService : IInitiativeMemberService
         var members = await _memberRepository
             .GetByInitiativeIdAsync(initiativeId);
 
+        var totalAllocationByUserId = await _memberRepository
+            .GetTotalAllocationByUserIdsAsync(members.Select(m => m.UserId).Distinct().ToList());
+
         return members
-            .Select(MapToDto)
+            .Select(m => MapToDto(
+                m, totalAllocationByUserId.GetValueOrDefault(m.UserId)))
             .ToList();
     }
 
@@ -79,7 +83,7 @@ public class InitiativeMemberService : IInitiativeMemberService
 
         var created = await _memberRepository.AddAsync(member);
 
-        return MapToDto(created);
+        return MapToDto(created, await GetTotalAllocationAsync(userId));
     }
 
     public async Task<InitiativeMemberResponseDto> UpdateAsync(
@@ -95,7 +99,7 @@ public class InitiativeMemberService : IInitiativeMemberService
 
         await _memberRepository.UpdateAsync(member);
 
-        return MapToDto(member);
+        return MapToDto(member, await GetTotalAllocationAsync(member.UserId));
     }
 
     public async Task RemoveAsync(int initiativeId, int memberId)
@@ -181,7 +185,15 @@ public class InitiativeMemberService : IInitiativeMemberService
             : value.Trim();
     }
 
-    private static InitiativeMemberResponseDto MapToDto(InitiativeMember member)
+    private async Task<decimal> GetTotalAllocationAsync(int userId)
+    {
+        var totals = await _memberRepository.GetTotalAllocationByUserIdsAsync([userId]);
+
+        return totals.GetValueOrDefault(userId);
+    }
+
+    private static InitiativeMemberResponseDto MapToDto(
+        InitiativeMember member, decimal totalAllocationAcrossInitiatives)
     {
         return new InitiativeMemberResponseDto
         {
@@ -193,6 +205,7 @@ public class InitiativeMemberService : IInitiativeMemberService
             Role = member.Role,
             ResponsibilityArea = member.ResponsibilityArea,
             Allocation = member.Allocation,
+            TotalAllocationAcrossInitiatives = totalAllocationAcrossInitiatives,
             JoinedAt = member.JoinedAt
         };
     }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "@/components/system/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,9 +23,12 @@ import {
   ArrowLeft,
   Save,
   GitBranch,
+  type LucideIcon,
 } from "lucide-react";
 import {
   useCreateInitiative,
+  useUpdateInitiative,
+  useInitiativeQuery,
   statusToLabel,
   statusToWire,
   workformToLabel,
@@ -106,9 +109,19 @@ const healthToneMap: Record<string, string> = {
 
 export default function NewInitiativePage() {
   const navigate = useNavigate();
+  const { id: routeId } = useParams<{ id: string }>();
+  const isEditMode = routeId !== undefined;
+  const editingId = isEditMode && /^\d+$/.test(routeId) ? Number(routeId) : null;
+
   const { addInitiative } = useInitiatives();
   const { openAddContribution } = useAddContribution();
   const createInitiative = useCreateInitiative();
+  const updateInitiative = useUpdateInitiative(editingId);
+  const {
+    data: existingInitiative,
+    isLoading: isLoadingExisting,
+    error: loadExistingError,
+  } = useInitiativeQuery(editingId);
   const { data: currentUser } = useBackendUser();
   const { data: users = [] } = useUsers();
 
@@ -145,12 +158,40 @@ export default function NewInitiativePage() {
   // Post-create state
   const [created, setCreated] = useState<CreatedInitiative | null>(null);
 
-  // Whoever is creating the Initiative owns it until they pick someone else.
+  // Whoever is creating the Initiative owns it until they pick someone else — only
+  // applies when actually creating; an edit's Owner comes from the fetched record.
   useEffect(() => {
+    if (isEditMode) return;
     if (currentUser && ownerUserId === null) {
       setOwnerUserId(currentUser.id);
     }
-  }, [currentUser, ownerUserId]);
+  }, [currentUser, ownerUserId, isEditMode]);
+
+  // Fills every field from the fetched Initiative exactly once, so a later refetch (or
+  // this effect re-running) never clobbers an edit the user is mid-way through making.
+  const [hasHydrated, setHasHydrated] = useState(false);
+  useEffect(() => {
+    if (!isEditMode || !existingInitiative || hasHydrated) return;
+
+    setName(existingInitiative.name);
+    setDescription(existingInitiative.description);
+    setBusinessArea(focusAreaToLabel(existingInitiative.businessArea));
+    setInitiativeType(workformToLabel(existingInitiative.initiativeType));
+    setPriority(existingInitiative.priority as PriorityValue);
+    setOwnerUserId(existingInitiative.ownerUserId);
+    setExecutiveSponsorUserId(existingInitiative.executiveSponsorUserId ?? null);
+    setImpactedRoles(existingInitiative.impactedRoles);
+    setChangeImpact(existingInitiative.changeImpact);
+    setLifecycleStage(lifecycleStageToLabel(existingInitiative.lifecycleStage));
+    setHealth(healthToLabel(existingInitiative.health));
+    setStatus(statusToLabel(existingInitiative.status));
+    setStartDate(existingInitiative.startDate);
+    setTargetEndDate(existingInitiative.targetEndDate);
+    setKeyObjective(existingInitiative.keyObjective ?? "");
+    setExpectedOutcome(existingInitiative.expectedOutcome ?? "");
+    setSuccessMeasures(existingInitiative.successMeasures ?? "");
+    setHasHydrated(true);
+  }, [isEditMode, existingInitiative, hasHydrated]);
 
   const nameOf = (id: number | null) =>
     users.find((u) => u.id === id)?.displayName ?? "";
@@ -273,41 +314,82 @@ export default function NewInitiativePage() {
 
     if (!isValid) return;
 
+    const payload = {
+      name: name.trim(),
+      description: description.trim(),
+      businessArea: focusAreaToWire(businessArea),
+      initiativeType: workformToWire(initiativeType),
+      priority,
+      ownerUserId,
+      executiveSponsorUserId,
+      impactedRoles,
+      changeImpact: changeImpactToWire(changeImpact),
+      startDate,
+      targetEndDate,
+      lifecycleStage: lifecycleStageToWire(lifecycleStage),
+      health: healthToWire(health),
+      status: statusToWire(status),
+      keyObjective: keyObjective.trim() || undefined,
+      expectedOutcome: expectedOutcome.trim() || undefined,
+      successMeasures: successMeasures.trim() || undefined,
+    };
+
     try {
-      const saved = await createInitiative.mutateAsync({
-        name: name.trim(),
-        description: description.trim(),
-        businessArea: focusAreaToWire(businessArea),
-        initiativeType: workformToWire(initiativeType),
-        priority,
-        ownerUserId,
-        executiveSponsorUserId,
-        impactedRoles,
-        changeImpact: changeImpactToWire(changeImpact),
-        startDate,
-        targetEndDate,
-        lifecycleStage: lifecycleStageToWire(lifecycleStage),
-        health: healthToWire(health),
-        status: statusToWire(status),
-        keyObjective: keyObjective.trim() || undefined,
-        expectedOutcome: expectedOutcome.trim() || undefined,
-        successMeasures: successMeasures.trim() || undefined,
-      });
+      if (isEditMode && editingId !== null) {
+        await updateInitiative.mutateAsync(payload);
+        navigate(`/initiatives/${editingId}`);
+        return;
+      }
+
+      const saved = await createInitiative.mutateAsync(payload);
 
       const record = toLocalRecord(saved, isDraft);
       addInitiative(record);
       setCreated(record);
     } catch {
-      // Rendered from createInitiative.error below.
+      // Rendered from activeError below.
     }
   };
 
   const handleSaveDraft = () => void submit(true);
   const handleCreate = () => void submit(false);
+  const handleSaveChanges = () => void submit(false);
 
-  const handleCancel = () => navigate("/initiatives");
+  const handleCancel = () =>
+    navigate(isEditMode && editingId !== null ? `/initiatives/${editingId}` : "/initiatives");
 
-  // === Success screen ===
+  const activeError = isEditMode ? updateInitiative.error : createInitiative.error;
+  const isSubmitting = isEditMode ? updateInitiative.isPending : createInitiative.isPending;
+
+  // === Edit mode: loading / not-found guards (error checked first, since it also
+  //     leaves isLoading false and hasHydrated false — the same shape as "still
+  //     loading" otherwise) ===
+  if (isEditMode && (loadExistingError || (!isLoadingExisting && !existingInitiative))) {
+    return (
+      <div className="max-w-3xl mx-auto py-16 text-center">
+        <p className="text-muted-foreground">
+          {loadExistingError?.message ?? "This Initiative could not be found."}
+        </p>
+        <Button
+          variant="outline"
+          className="mt-4 rounded-xl"
+          onClick={() => navigate("/initiatives")}
+        >
+          <ArrowLeft className="size-4" /> Back to Initiatives
+        </Button>
+      </div>
+    );
+  }
+
+  if (isEditMode && (isLoadingExisting || !hasHydrated)) {
+    return (
+      <div className="max-w-3xl mx-auto py-16 text-center text-muted-foreground">
+        Loading Initiative…
+      </div>
+    );
+  }
+
+  // === Success screen (create only — edit navigates straight to the Initiative) ===
   if (created) {
     return (
       <div className="max-w-3xl mx-auto space-y-6">
@@ -378,16 +460,16 @@ export default function NewInitiativePage() {
   return (
     <div className="pb-28">
       <PageHeader
-        eyebrow="Create"
-        title="New Initiative"
-        description="Capture the essentials to establish the Initiative as a primary record. Team, contributions, assets, and metrics are added after creation."
+        eyebrow={isEditMode ? "Edit" : "Create"}
+        title={isEditMode ? "Edit Initiative" : "New Initiative"}
+        description={
+          isEditMode
+            ? "Update the Initiative's details. Team, contributions, assets, and metrics are managed from the Initiative Detail page."
+            : "Capture the essentials to establish the Initiative as a primary record. Team, contributions, assets, and metrics are added after creation."
+        }
         actions={
-          <Button
-            variant="ghost"
-            className="rounded-xl"
-            onClick={() => navigate("/initiatives")}
-          >
-            <ArrowLeft className="size-4" /> Back to Initiatives
+          <Button variant="ghost" className="rounded-xl" onClick={handleCancel}>
+            <ArrowLeft className="size-4" /> {isEditMode ? "Back to Initiative" : "Back to Initiatives"}
           </Button>
         }
       />
@@ -932,9 +1014,9 @@ export default function NewInitiativePage() {
                 ? "All required fields are complete."
                 : `${Object.keys(errors).length} required field${Object.keys(errors).length === 1 ? "" : "s"} to complete.`}
             </div>
-            {createInitiative.error && (
+            {activeError && (
               <div className="mt-1 text-[12px] text-rose-700">
-                {createInitiative.error.message}
+                {activeError.message}
               </div>
             )}
           </div>
@@ -942,23 +1024,29 @@ export default function NewInitiativePage() {
             <Button variant="ghost" className="rounded-xl" onClick={handleCancel}>
               Cancel
             </Button>
+            {!isEditMode && (
+              <Button
+                variant="outline"
+                className="rounded-xl bg-white/80"
+                onClick={handleSaveDraft}
+                disabled={isSubmitting}
+              >
+                <Save className="size-4" /> Save as Draft
+              </Button>
+            )}
             <Button
-              variant="outline"
-              className="rounded-xl bg-white/80"
-              onClick={handleSaveDraft}
-              disabled={createInitiative.isPending}
-            >
-              <Save className="size-4" /> Save as Draft
-            </Button>
-            <Button
-              onClick={handleCreate}
-              disabled={(!isValid && showValidation) || createInitiative.isPending}
+              onClick={isEditMode ? handleSaveChanges : handleCreate}
+              disabled={(!isValid && showValidation) || isSubmitting}
               className="rounded-xl bg-copilot-gradient text-white shadow-lg"
             >
-              {createInitiative.isPending ? (
+              {isSubmitting ? (
                 <>
                   <span className="size-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
                   Saving…
+                </>
+              ) : isEditMode ? (
+                <>
+                  <Save className="size-4" /> Save Changes
                 </>
               ) : (
                 <>
@@ -983,7 +1071,7 @@ function FormSection({
   progress,
   children,
 }: {
-  icon: any;
+  icon: LucideIcon;
   step: number;
   title: string;
   subtitle?: string;
@@ -1074,7 +1162,7 @@ function SummaryRow({
 }: {
   label: string;
   value: string;
-  icon: any;
+  icon: LucideIcon;
 }) {
   return (
     <li className="flex items-start gap-2 rounded-lg bg-white/60 px-2.5 py-2">

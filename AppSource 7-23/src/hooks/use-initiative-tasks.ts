@@ -1,7 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { useQueries, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, isApiConfigured } from "@/lib/api-client";
 import { membersQueryKey } from "./use-initiative-members";
 import { useAuth } from "./use-auth";
+import { useInitiativesQuery } from "./use-initiatives-api";
+import { useBackendUser } from "./use-backend-user";
 
 /**
  * The API speaks enum names; the UI shows display labels. Translating between them is
@@ -62,6 +65,44 @@ export function useInitiativeTasks(initiativeId: number | null) {
     queryFn: () => apiFetch<TaskRecord[]>(`/api/initiatives/${initiativeId}/tasks`),
     enabled: isAuthenticated && isApiConfigured && initiativeId !== null,
   });
+}
+
+/**
+ * How many tasks assigned to the signed-in user are not yet Done, across every
+ * Initiative.
+ *
+ * Tasks are only readable per-Initiative, so this fans the read out the same way
+ * ContributionContext does for contributions: one query per Initiative, flattened and
+ * filtered client-side. Fine at today's scale; an aggregate "my tasks" endpoint would be
+ * the next step if the Initiative count grows past a few dozen.
+ */
+export function useMyOpenTasksCount() {
+  const { isAuthenticated } = useAuth();
+  const { data: initiatives = [] } = useInitiativesQuery();
+  const { data: backendUser } = useBackendUser();
+
+  const results = useQueries({
+    queries: initiatives.map((initiative) => ({
+      queryKey: tasksQueryKey(initiative.id),
+      queryFn: () => apiFetch<TaskRecord[]>(`/api/initiatives/${initiative.id}/tasks`),
+      enabled: isAuthenticated && isApiConfigured && backendUser !== undefined,
+    })),
+  });
+
+  const isLoading = results.some((result) => result.isLoading);
+  const stamps = results.map((result) => result.dataUpdatedAt).join(",");
+
+  const count = useMemo(() => {
+    if (!backendUser) return 0;
+
+    return results
+      .flatMap((result) => result.data ?? [])
+      .filter((task) => task.assignedToUserId === backendUser.id && task.status !== "Done")
+      .length;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stamps, backendUser]);
+
+  return { count, isLoading };
 }
 
 /**

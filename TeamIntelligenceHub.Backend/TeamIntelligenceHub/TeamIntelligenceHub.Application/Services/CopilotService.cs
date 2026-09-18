@@ -71,7 +71,8 @@ public class CopilotService : ICopilotService
 
         var queryVector = await _embeddingClient.EmbedAsync(question, cancellationToken);
 
-        var chunks = await _searchClient.SearchAsync(queryVector, cancellationToken);
+        var chunks = await _searchClient.SearchAsync(
+            queryVector, cancellationToken: cancellationToken);
 
         var userPrompt = BuildPrompt(question, chunks);
 

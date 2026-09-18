@@ -30,6 +30,15 @@ public class InitiativesController : ControllerBase
         return Ok(initiatives);
     }
 
+    /// <summary>
+    /// Aggregate counts for the Insights page's Readiness and Audience &amp; Roles tabs.
+    /// </summary>
+    [HttpGet("insights")]
+    public async Task<IActionResult> GetReadinessInsights()
+    {
+        return Ok(await _initiativeService.GetReadinessInsightsAsync());
+    }
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -71,6 +80,69 @@ public class InitiativesController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return Unauthorized(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Replaces the whole Initiative. Open to any signed-in user — there is no
+    /// per-Initiative ownership check on this endpoint.
+    /// </summary>
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(
+        int id, [FromBody] UpdateInitiativeRequestDto request)
+    {
+        try
+        {
+            var updated = await _initiativeService.UpdateAsync(id, request);
+
+            return Ok(updated);
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (ValidationException ex)
+        {
+            _logger.LogInformation(
+                "Initiative update rejected: {Reason}", ex.Message);
+
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// What deleting this Initiative would also remove — Contributions, Tasks, Activity,
+    /// Team members — for a confirmation dialog before Remove is actually called.
+    /// </summary>
+    [HttpGet("{id:int}/deletion-impact")]
+    public async Task<IActionResult> GetDeletionImpact(int id)
+    {
+        try
+        {
+            return Ok(await _initiativeService.GetDeletionImpactAsync(id));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Deletes the Initiative and cascades through its Contributions, Tasks, Activity,
+    /// and Team members. Open to any signed-in user.
+    /// </summary>
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Remove(int id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _initiativeService.RemoveAsync(id, cancellationToken);
+
+            return NoContent();
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
         }
     }
 }

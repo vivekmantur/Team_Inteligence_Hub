@@ -63,16 +63,6 @@ export interface CustomerZeroStory {
   status: "Published" | "Draft" | "In Review";
 }
 
-export interface Testimonial {
-  id: string;
-  author: string;
-  role: string;
-  audience: "Leadership" | "Stakeholder" | "Customer" | "Team";
-  quote: string;
-  sentiment: "Positive" | "Neutral" | "Constructive";
-  date: string;
-}
-
 export interface FeedbackItem {
   id: string;
   source: "Listening Session" | "Huddle" | "Survey" | "Feedback Loop";
@@ -163,14 +153,6 @@ export const customerZero: CustomerZeroStory[] = [
   { id: "cz2", title: "Copilot in Field: 12,480 hours reclaimed", problem: "Field sellers drowning in repetitive prep work.", solution: "Rolled out tailored Copilot prompts and templates.", impact: "12,480 hours saved this quarter.", metric: "+22.9% productivity", quote: "I'm getting Fridays back.", quoteAuthor: "Senior Account Exec", vertical: "Sales", status: "Published" },
   { id: "cz3", title: "Agent Fabric powers real-time insights", problem: "Analytics fragmented across 9 sources.", solution: "Unified Fabric layer with agent-driven summarization.", impact: "5x faster executive readouts.", metric: "-80% report cycle time", quote: "We now brief the CEO in minutes.", quoteAuthor: "Director, BizOps", vertical: "Operations", status: "In Review" },
   { id: "cz4", title: "Sentiment engine surfaces friction early", problem: "Adoption blockers only visible in quarterly surveys.", solution: "Continuous listening across huddles and feedback loops.", impact: "3 major friction points resolved in-quarter.", metric: "+8.5 NPS", quote: "We fix issues before they become escalations.", quoteAuthor: "Adoption PM", vertical: "Internal", status: "Draft" },
-];
-
-export const testimonials: Testimonial[] = [
-  { id: "ts1", author: "Satya-style CVP", role: "Corporate VP", audience: "Leadership", quote: "This team is the storytelling engine of Modern Work.", sentiment: "Positive", date: "Jun 24" },
-  { id: "ts2", author: "Anita Rao", role: "Director, GTM", audience: "Stakeholder", quote: "The QBR narrative was executive-ready on day one.", sentiment: "Positive", date: "Jun 20" },
-  { id: "ts3", author: "Field Seller Council", role: "Customer voice", audience: "Customer", quote: "Role Hub finally made Copilot feel personal.", sentiment: "Positive", date: "Jun 18" },
-  { id: "ts4", author: "Kai Nakamura", role: "Program Manager", audience: "Team", quote: "Cross-functional syncs have never been this crisp.", sentiment: "Positive", date: "Jun 15" },
-  { id: "ts5", author: "Reece Patterson", role: "Analyst", audience: "Stakeholder", quote: "Would love more granular agent telemetry in Fabric.", sentiment: "Constructive", date: "Jun 11" },
 ];
 
 export const feedback: FeedbackItem[] = [

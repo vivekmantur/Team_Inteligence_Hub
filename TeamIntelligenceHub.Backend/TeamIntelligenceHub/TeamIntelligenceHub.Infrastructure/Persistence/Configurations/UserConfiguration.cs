@@ -30,6 +30,11 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasMaxLength(User.DisplayNameMaxLength)
             .IsRequired();
 
+        builder.Property(x => x.AppRole)
+            .HasMaxLength(User.AppRoleMaxLength)
+            .HasDefaultValue(User.DefaultAppRole)
+            .IsRequired();
+
         builder.Property(x => x.IsActive)
             .IsRequired();
 

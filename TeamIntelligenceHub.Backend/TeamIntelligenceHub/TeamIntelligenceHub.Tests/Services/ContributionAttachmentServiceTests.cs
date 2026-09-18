@@ -16,6 +16,7 @@ public class ContributionAttachmentServiceTests
     private readonly Mock<IUserRepository> _userRepository = new();
     private readonly Mock<ICurrentUserService> _currentUserService = new();
     private readonly Mock<IFileStorage> _fileStorage = new();
+    private readonly Mock<IDocumentInsightExtractionQueue> _extractionQueue = new();
     private readonly ContributionAttachmentService _sut;
 
     public ContributionAttachmentServiceTests()
@@ -25,7 +26,8 @@ public class ContributionAttachmentServiceTests
             _contributionRepository.Object,
             _userRepository.Object,
             _currentUserService.Object,
-            _fileStorage.Object);
+            _fileStorage.Object,
+            _extractionQueue.Object);
     }
 
     private const string CallerEntraObjectId = "entra-object-id";

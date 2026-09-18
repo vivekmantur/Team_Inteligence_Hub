@@ -10,6 +10,24 @@ public interface IContributionRepository
     /// <summary>The feed for one Initiative, newest first.</summary>
     Task<List<Contribution>> GetByInitiativeIdAsync(int initiativeId);
 
+    /// <summary>
+    /// Every submitted Customer Story, across all Initiatives, newest first.
+    /// </summary>
+    /// <remarks>
+    /// Filters on the presence of the CustomerStory detail row rather than the Types
+    /// JSON column: RequireSectionsMatchTypes guarantees the two agree, and a row
+    /// existence check is the simpler query to translate. Drafts are excluded — this
+    /// feeds a company-wide showcase, not a personal feed, so a work-in-progress story
+    /// should not be visible outside its own Initiative yet.
+    /// </remarks>
+    Task<List<Contribution>> GetCustomerStoriesAsync();
+
+    /// <summary>
+    /// Every submitted Testimonial, across all Initiatives, newest first. Same filtering
+    /// rationale as GetCustomerStoriesAsync.
+    /// </summary>
+    Task<List<Contribution>> GetTestimonialsAsync();
+
     Task<Contribution> AddAsync(Contribution contribution);
 
     Task UpdateAsync(Contribution contribution);
@@ -34,7 +52,7 @@ public interface IContributionRepository
         IReadOnlyCollection<ContributionLink> links);
 
     /// <summary>
-    /// Writes, replaces, or clears the four conditional detail rows in one pass. A null
+    /// Writes, replaces, or clears the five conditional detail rows in one pass. A null
     /// argument means "this section does not apply", and any existing row is removed.
     /// </summary>
     Task SaveDetailSectionsAsync(
@@ -42,7 +60,8 @@ public interface IContributionRepository
         ContributionMetric? metric,
         ContributionRisk? risk,
         ContributionAiPractice? aiPractice,
-        ContributionCustomerStory? customerStory);
+        ContributionCustomerStory? customerStory,
+        ContributionTestimonial? testimonial);
 
     /// <summary>
     /// The distinct tag vocabulary, for the client's typeahead.

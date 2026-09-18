@@ -10,13 +10,21 @@ namespace TeamIntelligenceHub.Tests.Services;
 public class UserServiceTests
 {
     private readonly Mock<IUserRepository> _userRepository = new();
+    private readonly Mock<IInitiativeMemberRepository> _memberRepository = new();
     private readonly Mock<ICurrentUserService> _currentUserService = new();
     private readonly UserService _sut;
 
     public UserServiceTests()
     {
+        // Default: nobody has any tracked allocation anywhere. Individual tests override
+        // this when the total itself is what they're asserting on.
+        _memberRepository
+            .Setup(r => r.GetTotalAllocationByUserIdsAsync(It.IsAny<IReadOnlyCollection<int>>()))
+            .ReturnsAsync(new Dictionary<int, decimal>());
+
         _sut = new UserService(
             _userRepository.Object,
+            _memberRepository.Object,
             _currentUserService.Object);
     }
 

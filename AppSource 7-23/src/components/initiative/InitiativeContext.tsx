@@ -28,6 +28,8 @@ export interface InitiativeTeamMember {
   roleOther?: string;
   responsibilityArea?: string;
   allocation?: number;
+  /** This person's Allocation summed across every Initiative they belong to, not just this one. */
+  totalAllocationAcrossInitiatives?: number;
   avatarColor: string;
   addedAt: string;
 }

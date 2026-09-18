@@ -18,6 +18,12 @@ public class InitiativeMemberServiceTests
 
     public InitiativeMemberServiceTests()
     {
+        // Default: nobody has any tracked allocation anywhere. Individual tests override
+        // this when the total itself is what they're asserting on.
+        _memberRepository
+            .Setup(r => r.GetTotalAllocationByUserIdsAsync(It.IsAny<IReadOnlyCollection<int>>()))
+            .ReturnsAsync(new Dictionary<int, decimal>());
+
         _sut = new InitiativeMemberService(
             _memberRepository.Object,
             _initiativeRepository.Object,

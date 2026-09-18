@@ -67,6 +67,9 @@ public static class DependencyInjection
 
         services.AddSingleton<IFileStorage, AzureBlobFileStorage>();
 
+        services.AddSingleton<
+            IDocumentInsightExtractionQueue, StorageQueueDocumentInsightExtractionQueue>();
+
         // Bound the same way as BlobStorage: appsettings.json/user secrets/environment
         // variables all work without a code change.
         services.Configure<AzureOpenAiOptions>(
@@ -78,6 +81,14 @@ public static class DependencyInjection
         services.AddSingleton<IVectorSearchClient, AzureAiSearchVectorClient>();
         services.AddSingleton<IChatCompletionClient, AzureOpenAiChatClient>();
         services.AddScoped<ICopilotService, CopilotService>();
+
+        // Table/data-access only. The actual extraction workflow (search, prompting,
+        // parsing) lives in the standalone TestimonialAndCustomerStoryExtractionFunction
+        // project, not here — this repository backs ContributionService's read side for
+        // the Stories & Evidence page's "Extracted from documents" section.
+        services.AddScoped<
+            IDocumentTestimonialAndCustomerStoryRepository,
+            DocumentTestimonialAndCustomerStoryRepository>();
 
         return services;
     }

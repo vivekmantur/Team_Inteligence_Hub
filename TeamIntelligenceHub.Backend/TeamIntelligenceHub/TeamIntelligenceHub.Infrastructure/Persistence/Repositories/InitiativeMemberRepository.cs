@@ -29,6 +29,19 @@ public class InitiativeMemberRepository : IInitiativeMemberRepository
             .ToListAsync();
     }
 
+    public async Task<Dictionary<int, decimal>> GetTotalAllocationByUserIdsAsync(
+        IReadOnlyCollection<int> userIds)
+    {
+        return await _context.InitiativeMembers
+            .Where(x => userIds.Contains(x.UserId))
+            .GroupBy(x => x.UserId)
+            // Null means "not tracked" for that one row, not "0% on that Initiative" —
+            // but a sum has to treat it as something, and 0 is the only value that
+            // doesn't overstate a person's real workload.
+            .Select(g => new { UserId = g.Key, Total = g.Sum(x => x.Allocation ?? 0) })
+            .ToDictionaryAsync(x => x.UserId, x => x.Total);
+    }
+
     public async Task<bool> ExistsAsync(int initiativeId, int userId)
     {
         return await _context.InitiativeMembers

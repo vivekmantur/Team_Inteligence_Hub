@@ -55,6 +55,14 @@ public class TeamIntelligenceHubDbContext : DbContext
     public DbSet<ContributionCustomerStory> ContributionCustomerStories =>
         Set<ContributionCustomerStory>();
 
+    /// <summary>Present only for contributions typed as a Testimonial.</summary>
+    public DbSet<ContributionTestimonial> ContributionTestimonials =>
+        Set<ContributionTestimonial>();
+
+    /// <summary>Testimonials/customer stories extracted from attachment content, not typed by hand.</summary>
+    public DbSet<DocumentTestimonialAndCustomerStory> DocumentTestimonialsAndCustomerStories =>
+        Set<DocumentTestimonialAndCustomerStory>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(

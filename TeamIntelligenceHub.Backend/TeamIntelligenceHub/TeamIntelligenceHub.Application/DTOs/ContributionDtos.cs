@@ -77,6 +77,8 @@ public class CreateContributionRequestDto
     public ContributionAiPracticeRequestDto? AiPractice { get; set; }
 
     public ContributionCustomerStoryRequestDto? CustomerStory { get; set; }
+
+    public ContributionTestimonialRequestDto? Testimonial { get; set; }
 }
 
 /// <summary>
@@ -218,6 +220,30 @@ public class ContributionCustomerStoryRequestDto
     public string? BusinessValue { get; set; }
 }
 
+public class ContributionTestimonialRequestDto
+{
+    [Required(ErrorMessage = "Quote is required.")]
+    [StringLength(
+        ContributionTestimonial.QuoteMaxLength,
+        ErrorMessage = "Quote cannot exceed {1} characters.")]
+    public string Quote { get; set; } = null!;
+
+    [Required(ErrorMessage = "Speaker name is required.")]
+    [StringLength(
+        ContributionTestimonial.SpeakerNameMaxLength,
+        ErrorMessage = "Speaker name cannot exceed {1} characters.")]
+    public string SpeakerName { get; set; } = null!;
+
+    [StringLength(ContributionTestimonial.SpeakerRoleMaxLength)]
+    public string? SpeakerRole { get; set; }
+
+    /// <summary>Defaults to Stakeholder when omitted.</summary>
+    public TestimonialAudience? Audience { get; set; }
+
+    /// <summary>Defaults to Positive when omitted.</summary>
+    public TestimonialSentiment? Sentiment { get; set; }
+}
+
 // ---------------------------------------------------------------------------
 // Responses
 // ---------------------------------------------------------------------------
@@ -275,6 +301,8 @@ public class ContributionResponseDto
     public ContributionAiPracticeDto? AiPractice { get; set; }
 
     public ContributionCustomerStoryDto? CustomerStory { get; set; }
+
+    public ContributionTestimonialDto? Testimonial { get; set; }
 }
 
 public class ContributionContributorDto
@@ -379,4 +407,133 @@ public class ContributionCustomerStoryDto
     public string? Quote { get; set; }
 
     public string? BusinessValue { get; set; }
+}
+
+public class ContributionTestimonialDto
+{
+    public string Quote { get; set; } = null!;
+
+    public string SpeakerName { get; set; } = null!;
+
+    public string? SpeakerRole { get; set; }
+
+    public TestimonialAudience Audience { get; set; }
+
+    public TestimonialSentiment Sentiment { get; set; }
+}
+
+/// <summary>
+/// One card on the Stories &amp; Evidence page. Slimmer than ContributionResponseDto: a
+/// showcase grid has no use for contributors, links, attachments, or the other four
+/// detail sections, so this only carries what the card renders.
+/// </summary>
+public class CustomerStoryCardDto
+{
+    public int Id { get; set; }
+
+    public int InitiativeId { get; set; }
+
+    public string InitiativeName { get; set; } = null!;
+
+    public int SubmittedByUserId { get; set; }
+
+    public string Title { get; set; } = null!;
+
+    public string? KeyTakeaway { get; set; }
+
+    public DateTime? SubmittedAt { get; set; }
+
+    public string CustomerName { get; set; } = null!;
+
+    public string? Summary { get; set; }
+
+    public string? Outcome { get; set; }
+
+    public string? Quote { get; set; }
+
+    public string? BusinessValue { get; set; }
+}
+
+/// <summary>
+/// One card on the Stories &amp; Evidence page's Testimonial tab. Slimmer than
+/// ContributionResponseDto, on the same reasoning as CustomerStoryCardDto.
+/// </summary>
+public class TestimonialCardDto
+{
+    public int Id { get; set; }
+
+    public int InitiativeId { get; set; }
+
+    public string InitiativeName { get; set; } = null!;
+
+    public int SubmittedByUserId { get; set; }
+
+    public DateTime? SubmittedAt { get; set; }
+
+    public string Quote { get; set; } = null!;
+
+    public string SpeakerName { get; set; } = null!;
+
+    public string? SpeakerRole { get; set; }
+
+    public TestimonialAudience Audience { get; set; }
+
+    public TestimonialSentiment Sentiment { get; set; }
+}
+
+/// <summary>
+/// One card on the Stories &amp; Evidence page's "Extracted from documents" section,
+/// customer-story half. Sourced from DocumentTestimonialsAndCustomerStories rather than a
+/// Contribution's own CustomerStory row, so it carries the source attachment's file name
+/// instead of a contributor-written Title.
+/// </summary>
+public class DocumentCustomerStoryCardDto
+{
+    public int Id { get; set; }
+
+    public int ContributionId { get; set; }
+
+    public int InitiativeId { get; set; }
+
+    public string InitiativeName { get; set; } = null!;
+
+    public string SourceFileName { get; set; } = null!;
+
+    public string? CustomerName { get; set; }
+
+    public string? Summary { get; set; }
+
+    public string? Outcome { get; set; }
+
+    public string? Quote { get; set; }
+
+    public string? BusinessValue { get; set; }
+}
+
+/// <summary>
+/// One card on the Stories &amp; Evidence page's "Extracted from documents" section,
+/// testimonial half. See DocumentCustomerStoryCardDto for why this is separate from
+/// TestimonialCardDto.
+/// </summary>
+public class DocumentTestimonialCardDto
+{
+    public int Id { get; set; }
+
+    public int ContributionId { get; set; }
+
+    public int InitiativeId { get; set; }
+
+    public string InitiativeName { get; set; } = null!;
+
+    public string SourceFileName { get; set; } = null!;
+
+    public string? Quote { get; set; }
+
+    public string? SpeakerName { get; set; }
+
+    public string? SpeakerRole { get; set; }
+
+    public TestimonialAudience? Audience { get; set; }
+
+    public TestimonialSentiment? Sentiment { get; set; }
 }

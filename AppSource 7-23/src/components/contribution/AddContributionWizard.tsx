@@ -14,16 +14,24 @@ import { useBackendUser } from "@/hooks/use-backend-user";
 import {
   LINK_SOURCE_OPTIONS,
   REUSE_TARGET_OPTIONS,
+  linkSourceToLabel,
   linkSourceToWire,
+  reuseTargetToLabel,
   reuseTargetToWire,
+  useContribution,
   useCreateContribution,
+  useDeleteContributionAttachment,
+  useUpdateContribution,
   useUploadContributionAttachment,
+  type ContributionAttachmentRecord,
   type ContributionLinkSourceWire,
   type ContributionPriorityWire,
   type ContributionStatusWire,
   type ContributionTypeWire,
   type RiskSeverityWire,
   type SaveContributionRequest,
+  type TestimonialAudienceWire,
+  type TestimonialSentimentWire,
 } from "@/hooks/use-contributions";
 import {
   ArrowLeft,
@@ -63,6 +71,8 @@ interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   preselectedInitiativeId?: string;
+  /** When set, the wizard loads and edits this contribution instead of creating a new one. */
+  editingContributionId?: string;
 }
 
 /**
@@ -109,6 +119,14 @@ type RiskDraft = {
   targetResolutionDate: string;
 };
 
+type TestimonialDraft = {
+  quote: string;
+  speakerName: string;
+  speakerRole: string;
+  audience: TestimonialAudienceWire;
+  sentiment: TestimonialSentimentWire;
+};
+
 // Blank values live here rather than inline in useState so that opening the dialog can
 // reset to exactly what it started with. The wizard is mounted for the life of the app
 // and only toggles `open`, so nothing is cleared for us between uses.
@@ -133,6 +151,14 @@ const EMPTY_RISK: RiskDraft = {
 const EMPTY_AI = { tool: "Copilot", useCase: "", prompt: "", timeSaved: "", recommendation: "" };
 
 const EMPTY_STORY = { customer: "", summary: "", outcome: "", quote: "", businessValue: "" };
+
+const EMPTY_TESTIMONIAL: TestimonialDraft = {
+  quote: "",
+  speakerName: "",
+  speakerRole: "",
+  audience: "Stakeholder",
+  sentiment: "Positive",
+};
 
 const EMPTY_ASSET = { description: "", link: "" };
 
@@ -192,11 +218,20 @@ function humanSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function AddContributionWizard({ open, onOpenChange, preselectedInitiativeId }: Props) {
+export function AddContributionWizard({
+  open,
+  onOpenChange,
+  preselectedInitiativeId,
+  editingContributionId,
+}: Props) {
+  const isEditing = editingContributionId != null;
+  const numericEditingId = editingContributionId ? Number(editingContributionId) : null;
+
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [existingAttachments, setExistingAttachments] = useState<ContributionAttachmentRecord[]>([]);
 
   // Step 1
   const [initiativeId, setInitiativeId] = useState<string>("");
@@ -219,6 +254,7 @@ export function AddContributionWizard({ open, onOpenChange, preselectedInitiativ
   const [risk, setRisk] = useState<RiskDraft>(EMPTY_RISK);
   const [ai, setAi] = useState(EMPTY_AI);
   const [story, setStory] = useState(EMPTY_STORY);
+  const [testimonial, setTestimonial] = useState<TestimonialDraft>(EMPTY_TESTIMONIAL);
   const [asset, setAsset] = useState(EMPTY_ASSET);
 
   // Step 5
@@ -243,6 +279,7 @@ export function AddContributionWizard({ open, onOpenChange, preselectedInitiativ
   const { data: backendUser } = useBackendUser();
   const { data: apiInitiatives = [] } = useInitiativesQuery();
   const { data: apiUsers = [] } = useUsers();
+  const { data: editingRecord } = useContribution(numericEditingId);
 
   const submitter = useMemo(
     () => ({
@@ -284,7 +321,9 @@ export function AddContributionWizard({ open, onOpenChange, preselectedInitiativ
   const numericInitiativeId = /^\d+$/.test(initiativeId) ? Number(initiativeId) : null;
 
   const createContribution = useCreateContribution(numericInitiativeId);
+  const updateContribution = useUpdateContribution(numericInitiativeId);
   const uploadAttachment = useUploadContributionAttachment(numericInitiativeId);
+  const deleteAttachment = useDeleteContributionAttachment(numericInitiativeId);
 
   const initiative = useMemo(() => projects.find((p) => p.id === initiativeId), [projects, initiativeId]);
 
@@ -302,6 +341,10 @@ export function AddContributionWizard({ open, onOpenChange, preselectedInitiativ
     setSubmitted(false);
     setSaveError(null);
     setSaving(false);
+
+    // Editing an existing contribution is prefilled by the effect below once its data
+    // loads, rather than being blanked here.
+    if (isEditing) return;
 
     // Step 1. Blank unless the caller named an Initiative, e.g. the button on an
     // Initiative's own page.
@@ -321,9 +364,11 @@ export function AddContributionWizard({ open, onOpenChange, preselectedInitiativ
     setRisk(EMPTY_RISK);
     setAi(EMPTY_AI);
     setStory(EMPTY_STORY);
+    setTestimonial(EMPTY_TESTIMONIAL);
     setAsset(EMPTY_ASSET);
 
     setFiles([]);
+    setExistingAttachments([]);
     setLinks([]);
     setLinkSource(LINK_SOURCES[0]);
     setLinkUrl("");
@@ -343,7 +388,125 @@ export function AddContributionWizard({ open, onOpenChange, preselectedInitiativ
     // backendUser is deliberately not a dependency: this runs on open, and the effect
     // below covers a profile that resolves while the dialog is already up.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, preselectedInitiativeId]);
+  }, [open, preselectedInitiativeId, isEditing]);
+
+  /**
+   * Prefills every field from the contribution being edited, once it loads. Separate
+   * from the reset effect above because editingRecord arrives asynchronously — the
+   * dialog is already open by the time it does.
+   */
+  useEffect(() => {
+    if (!open || !isEditing || !editingRecord) return;
+
+    setInitiativeId(String(editingRecord.initiativeId));
+    setInitiativeQuery("");
+
+    setTypes(
+      editingRecord.types
+        .map((wire) => CONTRIBUTION_TYPES.find((t) => t.wire === wire)?.id)
+        .filter((id): id is string => Boolean(id)),
+    );
+
+    setTitle(editingRecord.title);
+    setDescription(editingRecord.description);
+    setKeyTakeaway(editingRecord.keyTakeaway ?? "");
+    setPriority(editingRecord.priority);
+    setTagInput("");
+    setTags(editingRecord.tags);
+
+    setMetric(
+      editingRecord.metric
+        ? {
+            metricName: editingRecord.metric.metricName,
+            previousValue: editingRecord.metric.previousValue?.toString() ?? "",
+            currentValue: editingRecord.metric.currentValue?.toString() ?? "",
+            unit: editingRecord.metric.unit ?? "",
+            reportingPeriod: editingRecord.metric.reportingPeriod ?? "",
+          }
+        : EMPTY_METRIC,
+    );
+
+    setRisk(
+      editingRecord.risk
+        ? {
+            description: editingRecord.risk.description,
+            severity: editingRecord.risk.severity,
+            businessImpact: editingRecord.risk.businessImpact ?? "",
+            mitigation: editingRecord.risk.mitigation ?? "",
+            supportNeeded: editingRecord.risk.supportNeeded ?? "",
+            ownerUserId: editingRecord.risk.ownerUserId,
+            targetResolutionDate: editingRecord.risk.targetResolutionDate ?? "",
+          }
+        : EMPTY_RISK,
+    );
+
+    setAi(
+      editingRecord.aiPractice
+        ? {
+            tool: editingRecord.aiPractice.tool,
+            useCase: editingRecord.aiPractice.useCase ?? "",
+            prompt: editingRecord.aiPractice.prompt ?? "",
+            timeSaved: editingRecord.aiPractice.timeSavedHoursPerWeek?.toString() ?? "",
+            recommendation: editingRecord.aiPractice.recommendation ?? "",
+          }
+        : EMPTY_AI,
+    );
+
+    setStory(
+      editingRecord.customerStory
+        ? {
+            customer: editingRecord.customerStory.customerName,
+            summary: editingRecord.customerStory.summary ?? "",
+            outcome: editingRecord.customerStory.outcome ?? "",
+            quote: editingRecord.customerStory.quote ?? "",
+            businessValue: editingRecord.customerStory.businessValue ?? "",
+          }
+        : EMPTY_STORY,
+    );
+
+    setTestimonial(
+      editingRecord.testimonial
+        ? {
+            quote: editingRecord.testimonial.quote,
+            speakerName: editingRecord.testimonial.speakerName,
+            speakerRole: editingRecord.testimonial.speakerRole ?? "",
+            audience: editingRecord.testimonial.audience,
+            sentiment: editingRecord.testimonial.sentiment,
+          }
+        : EMPTY_TESTIMONIAL,
+    );
+
+    setAsset(EMPTY_ASSET);
+
+    setFiles([]);
+    setExistingAttachments(editingRecord.attachments);
+
+    setLinks(
+      editingRecord.links.map((l) => ({
+        id: String(l.id),
+        source: linkSourceToLabel(l.source),
+        url: l.url,
+        label: l.label ?? l.url,
+      })),
+    );
+    setLinkSource(LINK_SOURCES[0]);
+    setLinkUrl("");
+    setLinkLabel("");
+    setDragOver(false);
+
+    setContributors(
+      editingRecord.contributors.map((c) => ({
+        id: String(c.userId),
+        name: c.displayName,
+        role: "",
+        area: c.responsibilityArea ?? "",
+        primary: c.isPrimary,
+      })),
+    );
+    setPersonQuery("");
+
+    setVisibility(editingRecord.reuseTargets.map(reuseTargetToLabel));
+  }, [open, isEditing, editingRecord]);
 
   // Covers the profile resolving after the dialog is already open. The submitter is
   // always credited, which mirrors what the API does server-side anyway.
@@ -397,8 +560,9 @@ export function AddContributionWizard({ open, onOpenChange, preselectedInitiativ
   const showRisk = types.includes("risk");
   const showAI = types.includes("ai_practice");
   const showStory = types.includes("customer_story");
+  const showTestimonial = types.includes("testimonial");
   const showAsset = types.includes("asset");
-  const hasStep4Section = showMetric || showRisk || showAI || showStory || showAsset;
+  const hasStep4Section = showMetric || showRisk || showAI || showStory || showTestimonial || showAsset;
 
   function toggleType(id: string) {
     setTypes((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
@@ -548,15 +712,27 @@ export function AddContributionWizard({ open, onOpenChange, preselectedInitiativ
             businessValue: blankToNull(story.businessValue),
           }
         : null,
+      testimonial: showTestimonial
+        ? {
+            quote: testimonial.quote.trim(),
+            speakerName: testimonial.speakerName.trim(),
+            speakerRole: blankToNull(testimonial.speakerRole),
+            audience: testimonial.audience,
+            sentiment: testimonial.sentiment,
+          }
+        : null,
     };
   }
 
   /**
-   * Creates the contribution, then uploads each file against it.
+   * Creates or updates the contribution, then uploads each newly staged file against it.
    *
    * Order matters: an attachment row hangs off a ContributionId, so the contribution has
    * to exist first. A file that fails to upload does not roll back the contribution —
-   * the text is the valuable part, and the person can retry the attachment.
+   * the text is the valuable part, and the person can retry the attachment. Editing
+   * reuses the same request shape as creating (the API's Update endpoint takes the whole
+   * graph too) and never touches the Initiative, which the Update endpoint has no way to
+   * change anyway.
    */
   async function save(status: ContributionStatusWire) {
     if (!numericInitiativeId) {
@@ -568,13 +744,19 @@ export function AddContributionWizard({ open, onOpenChange, preselectedInitiativ
     setSaveError(null);
 
     try {
-      const created = await createContribution.mutateAsync(buildRequest(status));
+      const saved =
+        isEditing && numericEditingId
+          ? await updateContribution.mutateAsync({
+              contributionId: numericEditingId,
+              ...buildRequest(status),
+            })
+          : await createContribution.mutateAsync(buildRequest(status));
 
       const failed: string[] = [];
 
       for (const pending of files) {
         try {
-          await uploadAttachment.mutateAsync({ contributionId: created.id, file: pending.file });
+          await uploadAttachment.mutateAsync({ contributionId: saved.id, file: pending.file });
         } catch {
           failed.push(pending.file.name);
         }
@@ -586,12 +768,23 @@ export function AddContributionWizard({ open, onOpenChange, preselectedInitiativ
         );
       }
 
-      return created;
+      return saved;
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Could not save the contribution.");
       return null;
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function removeExistingAttachment(attachmentId: number) {
+    if (!numericEditingId) return;
+
+    try {
+      await deleteAttachment.mutateAsync({ contributionId: numericEditingId, attachmentId });
+      setExistingAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Could not remove the file.");
     }
   }
 
@@ -617,7 +810,7 @@ export function AddContributionWizard({ open, onOpenChange, preselectedInitiativ
         showCloseButton={false}
         className="p-0 w-[min(1200px,96vw)] max-w-[min(1200px,96vw)] sm:max-w-[min(1200px,96vw)] grid-rows-[minmax(0,1fr)] h-[min(86vh,900px)] max-h-[calc(100vh-3rem)] rounded-2xl overflow-hidden border-white/60 bg-gradient-to-br from-white via-white to-indigo-50/40"
       >
-        <DialogTitle className="sr-only">Add Contribution</DialogTitle>
+        <DialogTitle className="sr-only">{isEditing ? "Edit Contribution" : "Add Contribution"}</DialogTitle>
 
         {submitted ? (
           <SuccessView initiativeName={initiative?.name ?? ""} onClose={() => onOpenChange(false)} />
@@ -631,10 +824,12 @@ export function AddContributionWizard({ open, onOpenChange, preselectedInitiativ
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gradient">
-                    Add Contribution
+                    {isEditing ? "Edit Contribution" : "Add Contribution"}
                   </div>
                   <h2 className="text-lg md:text-xl font-semibold leading-tight">
-                    Capture something valuable for your Initiative
+                    {isEditing
+                      ? "Pick up where you left off"
+                      : "Capture something valuable for your Initiative"}
                   </h2>
                 </div>
                 <button
@@ -693,6 +888,7 @@ export function AddContributionWizard({ open, onOpenChange, preselectedInitiativ
                     items={filteredInitiatives}
                     submitter={submitter}
                     initiative={initiative}
+                    locked={isEditing}
                   />
                 )}
                 {step === 2 && <Step2 types={types} toggleType={toggleType} />}
@@ -720,6 +916,7 @@ export function AddContributionWizard({ open, onOpenChange, preselectedInitiativ
                     showRisk={showRisk}
                     showAI={showAI}
                     showStory={showStory}
+                    showTestimonial={showTestimonial}
                     showAsset={showAsset}
                     metric={metric}
                     setMetric={setMetric}
@@ -729,6 +926,8 @@ export function AddContributionWizard({ open, onOpenChange, preselectedInitiativ
                     setAi={setAi}
                     story={story}
                     setStory={setStory}
+                    testimonial={testimonial}
+                    setTestimonial={setTestimonial}
                     asset={asset}
                     setAsset={setAsset}
                     types={types}
@@ -739,6 +938,8 @@ export function AddContributionWizard({ open, onOpenChange, preselectedInitiativ
                   <Step5
                     files={files}
                     setFiles={setFiles}
+                    existingAttachments={existingAttachments}
+                    onRemoveExistingAttachment={removeExistingAttachment}
                     links={links}
                     onAddLink={addLink}
                     linkSource={linkSource}
@@ -779,6 +980,7 @@ export function AddContributionWizard({ open, onOpenChange, preselectedInitiativ
                     priority={priority}
                     tags={tags}
                     files={files}
+                    existingAttachments={existingAttachments}
                     links={links}
                     contributors={contributors}
                     visibility={visibility}
@@ -826,10 +1028,12 @@ export function AddContributionWizard({ open, onOpenChange, preselectedInitiativ
 
                   <SummaryRow label="Files attached" icon={<Paperclip className="size-3.5" />}>
                     <div className="text-[13px] font-medium">
-                      {files.length + links.length} item{files.length + links.length === 1 ? "" : "s"}
+                      {existingAttachments.length + files.length + links.length} item
+                      {existingAttachments.length + files.length + links.length === 1 ? "" : "s"}
                     </div>
                     <div className="text-[11px] text-muted-foreground">
-                      {files.length} file{files.length === 1 ? "" : "s"} · {links.length} link{links.length === 1 ? "" : "s"}
+                      {existingAttachments.length + files.length} file
+                      {existingAttachments.length + files.length === 1 ? "" : "s"} · {links.length} link{links.length === 1 ? "" : "s"}
                     </div>
                   </SummaryRow>
 
@@ -925,13 +1129,17 @@ function SectionTitle({ eyebrow, title, description }: { eyebrow: string; title:
 }
 
 /* Step 1 */
-function Step1({ initiativeId, setInitiativeId, query, setQuery, items, submitter, initiative }: any) {
+function Step1({ initiativeId, setInitiativeId, query, setQuery, items, submitter, initiative, locked }: any) {
   return (
     <div>
       <SectionTitle
         eyebrow="Step 1"
         title="Initiative Context"
-        description="Which Initiative does this contribution belong to?"
+        description={
+          locked
+            ? "This contribution's Initiative was set when it was created and can't be changed."
+            : "Which Initiative does this contribution belong to?"
+        }
       />
       <div className="grid md:grid-cols-2 gap-3 mb-5">
         <div className="rounded-xl bg-white/80 border border-black/5 p-3">
@@ -952,48 +1160,58 @@ function Step1({ initiativeId, setInitiativeId, query, setQuery, items, submitte
       </div>
 
       <Label className="text-[12px] font-semibold">Initiative <span className="text-rose-500">*</span></Label>
-      <div className="relative mt-1.5">
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search initiatives by name or workstream…"
-          className="h-10 bg-white rounded-xl"
-        />
-      </div>
 
-      {/* -mx-1 + p-1: overflow-y-auto clips on every side, so the selected card's
-          ring-2 and shadow need room inside the scroll box. The negative margin
-          cancels the padding so the cards still line up with the search field. */}
-      <div className="mt-2 -mx-1 grid sm:grid-cols-2 gap-2 max-h-[320px] overflow-y-auto p-1">
-        {items.map((p: any) => {
-          const selected = initiativeId === p.id;
-          return (
-            <button
-              key={p.id}
-              onClick={() => setInitiativeId(p.id)}
-              className={cn(
-                "text-left rounded-xl border p-3 transition-all bg-white",
-                selected ? "border-transparent ring-2 ring-indigo-500 shadow-md" : "border-black/5 hover:border-indigo-200 hover:shadow-sm"
-              )}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="text-[13px] font-semibold leading-tight truncate">{p.name}</div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5">{p.workstream} · {p.owner}</div>
-                </div>
-                {selected && (
-                  <div className="size-6 rounded-full bg-copilot-gradient grid place-items-center text-white shrink-0">
-                    <Check className="size-3.5" />
+      {locked ? (
+        <div className="mt-1.5 rounded-xl border border-black/5 bg-white p-3">
+          <div className="text-[13px] font-semibold leading-tight">{initiative?.name}</div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">{initiative?.workstream}</div>
+        </div>
+      ) : (
+        <>
+          <div className="relative mt-1.5">
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search initiatives by name or workstream…"
+              className="h-10 bg-white rounded-xl"
+            />
+          </div>
+
+          {/* -mx-1 + p-1: overflow-y-auto clips on every side, so the selected card's
+              ring-2 and shadow need room inside the scroll box. The negative margin
+              cancels the padding so the cards still line up with the search field. */}
+          <div className="mt-2 -mx-1 grid sm:grid-cols-2 gap-2 max-h-[320px] overflow-y-auto p-1">
+            {items.map((p: any) => {
+              const selected = initiativeId === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setInitiativeId(p.id)}
+                  className={cn(
+                    "text-left rounded-xl border p-3 transition-all bg-white",
+                    selected ? "border-transparent ring-2 ring-indigo-500 shadow-md" : "border-black/5 hover:border-indigo-200 hover:shadow-sm"
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-[13px] font-semibold leading-tight truncate">{p.name}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">{p.workstream} · {p.owner}</div>
+                    </div>
+                    {selected && (
+                      <div className="size-6 rounded-full bg-copilot-gradient grid place-items-center text-white shrink-0">
+                        <Check className="size-3.5" />
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-copilot-gradient" style={{ width: `${p.progress}%` }} />
-              </div>
-            </button>
-          );
-        })}
-      </div>
+                  <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full bg-copilot-gradient" style={{ width: `${p.progress}%` }} />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {initiative && (
         <div className="mt-4 rounded-xl bg-white/80 border border-black/5 p-3">
@@ -1122,7 +1340,7 @@ function Step3(props: any) {
 
 /* Step 4 */
 function Step4(props: any) {
-  const { hasAny, showMetric, showRisk, showAI, showStory, showAsset, metric, setMetric, risk, setRisk, ai, setAi, story, setStory, asset, setAsset, types, people } = props;
+  const { hasAny, showMetric, showRisk, showAI, showStory, showTestimonial, showAsset, metric, setMetric, risk, setRisk, ai, setAi, story, setStory, testimonial, setTestimonial, asset, setAsset, types, people } = props;
 
   if (!hasAny) {
     return (
@@ -1218,6 +1436,34 @@ function Step4(props: any) {
           </SectionCard>
         )}
 
+        {showTestimonial && (
+          <SectionCard title="Testimonial" icon={<MessagesSquare className="size-4" />} gradient="from-pink-500 to-rose-500">
+            <div className="grid sm:grid-cols-2 gap-3">
+              <Field label="Quote" full><Textarea value={testimonial.quote} onChange={(e) => setTestimonial({ ...testimonial, quote: e.target.value })} placeholder="“…”" className="bg-white rounded-xl min-h-[70px]" /></Field>
+              <Field label="Speaker name"><Input value={testimonial.speakerName} onChange={(e) => setTestimonial({ ...testimonial, speakerName: e.target.value })} className="h-10 bg-white rounded-xl" /></Field>
+              <Field label="Speaker role"><Input value={testimonial.speakerRole} onChange={(e) => setTestimonial({ ...testimonial, speakerRole: e.target.value })} placeholder="e.g. Director, GTM" className="h-10 bg-white rounded-xl" /></Field>
+              <Field label="Audience">
+                <div className="flex flex-wrap gap-1.5">
+                  {(["Leadership", "Stakeholder", "Customer", "Team"] as TestimonialAudienceWire[]).map((a) => (
+                    <button key={a} onClick={() => setTestimonial({ ...testimonial, audience: a })} className={cn("h-10 px-3 rounded-xl text-[12px] font-medium border", testimonial.audience === a ? "bg-pink-500 text-white border-transparent" : "bg-white border-black/5")}>
+                      {a}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+              <Field label="Sentiment">
+                <div className="flex flex-wrap gap-1.5">
+                  {(["Positive", "Neutral", "Constructive"] as TestimonialSentimentWire[]).map((s) => (
+                    <button key={s} onClick={() => setTestimonial({ ...testimonial, sentiment: s })} className={cn("h-10 px-3 rounded-xl text-[12px] font-medium border", testimonial.sentiment === s ? "bg-pink-500 text-white border-transparent" : "bg-white border-black/5")}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+            </div>
+          </SectionCard>
+        )}
+
         {showAsset && (
           <SectionCard title="Supporting Asset" icon={<Paperclip className="size-4" />} gradient="from-slate-500 to-slate-700">
             <div className="grid sm:grid-cols-2 gap-3">
@@ -1257,10 +1503,55 @@ function Field({ label, children, full }: any) {
 
 /* Step 5 */
 function Step5(props: any) {
-  const { files, links, onAddLink, linkSource, setLinkSource, linkUrl, setLinkUrl, linkLabel, setLinkLabel, dragOver, setDragOver, handleFiles, fileInputRef, onRemoveLink, onRemoveFile } = props;
+  const {
+    files,
+    existingAttachments = [],
+    onRemoveExistingAttachment,
+    links,
+    onAddLink,
+    linkSource,
+    setLinkSource,
+    linkUrl,
+    setLinkUrl,
+    linkLabel,
+    setLinkLabel,
+    dragOver,
+    setDragOver,
+    handleFiles,
+    fileInputRef,
+    onRemoveLink,
+    onRemoveFile,
+  } = props;
   return (
     <div>
       <SectionTitle eyebrow="Step 5" title="Supporting Evidence" description="Attach docs, decks, videos, images, or link out to SharePoint, Teams, Loop, OneDrive." />
+
+      {existingAttachments.length > 0 && (
+        <div className="mb-4 space-y-2">
+          <Label className="text-[12px] font-semibold">Already attached</Label>
+          {existingAttachments.map((a: ContributionAttachmentRecord) => {
+            const Icon = fileIconFor(a.fileName);
+            return (
+              <div key={a.id} className="rounded-xl bg-white border border-black/5 p-3 flex items-center gap-3">
+                <div className="size-9 rounded-lg bg-gradient-to-br from-indigo-500/15 to-fuchsia-500/15 grid place-items-center text-indigo-600">
+                  <Icon className="size-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-medium truncate">{a.fileName}</div>
+                  <div className="text-[11px] text-muted-foreground">{humanSize(a.fileSize)}</div>
+                </div>
+                <button
+                  onClick={() => onRemoveExistingAttachment(a.id)}
+                  className="size-8 rounded-lg hover:bg-black/5 grid place-items-center text-muted-foreground"
+                  aria-label={`Remove ${a.fileName}`}
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div
         onDragOver={(e) => {
@@ -1489,7 +1780,23 @@ function Step7({ visibility, toggle }: { visibility: string[]; toggle: (v: strin
 
 /* Step 8 */
 function Step8(props: any) {
-  const { initiativeName, workstream, types, title, description, keyTakeaway, priority, tags, files, links, contributors, visibility, onJumpTo } = props;
+  const {
+    initiativeName,
+    workstream,
+    types,
+    title,
+    description,
+    keyTakeaway,
+    priority,
+    tags,
+    files,
+    existingAttachments = [],
+    links,
+    contributors,
+    visibility,
+    onJumpTo,
+  } = props;
+  const fileCount = existingAttachments.length + files.length;
   return (
     <div>
       <SectionTitle eyebrow="Step 8" title="Review & Submit" description="Everything looks good? Submit to make this part of the Initiative's organizational memory." />
@@ -1518,7 +1825,7 @@ function Step8(props: any) {
           </div>
         </ReviewCard>
         <ReviewCard title="Evidence" step={5} onEdit={onJumpTo}>
-          <div className="text-[12px] text-muted-foreground">{files.length} file{files.length === 1 ? "" : "s"} · {links.length} link{links.length === 1 ? "" : "s"}</div>
+          <div className="text-[12px] text-muted-foreground">{fileCount} file{fileCount === 1 ? "" : "s"} · {links.length} link{links.length === 1 ? "" : "s"}</div>
         </ReviewCard>
         <ReviewCard title="Contributors" step={6} onEdit={onJumpTo}>
           <div className="flex flex-wrap gap-2">

@@ -15,8 +15,10 @@ public class InitiativeServiceTests
     private const string DefaultEntraObjectId = "entra-object-id";
 
     private readonly Mock<IInitiativeRepository> _initiativeRepository = new();
+    private readonly Mock<IContributionRepository> _contributionRepository = new();
     private readonly Mock<IUserRepository> _userRepository = new();
     private readonly Mock<ICurrentUserService> _currentUserService = new();
+    private readonly Mock<IFileStorage> _fileStorage = new();
 
     private readonly InitiativeService _sut;
 
@@ -24,8 +26,10 @@ public class InitiativeServiceTests
     {
         _sut = new InitiativeService(
             _initiativeRepository.Object,
+            _contributionRepository.Object,
             _userRepository.Object,
-            _currentUserService.Object);
+            _currentUserService.Object,
+            _fileStorage.Object);
     }
 
     // ---------- helpers ----------
@@ -62,6 +66,30 @@ public class InitiativeServiceTests
         _userRepository
             .Setup(x => x.GetByEntraObjectIdAsync(DefaultEntraObjectId))
             .ReturnsAsync(caller);
+    }
+
+    private static Initiative CreateInitiative(int id, User owner)
+    {
+        return new Initiative
+        {
+            Id = id,
+            Name = "Existing Initiative",
+            Description = "Existing description text.",
+            BusinessArea = InitiativeFocusArea.StrategicPrograms,
+            InitiativeType = InitiativeWorkform.Campaign,
+            Priority = InitiativePriority.Medium,
+            OwnerUserId = owner.Id,
+            Owner = owner,
+            Segment = InitiativeSegment.Enterprise,
+            ChangeImpact = InitiativeChangeImpact.Medium,
+            StartDate = new DateOnly(2024, 1, 1),
+            TargetEndDate = new DateOnly(2024, 12, 31),
+            LifecycleStage = InitiativeLifecycleStage.Plan,
+            Health = InitiativeHealth.OnTrack,
+            Status = InitiativeStatus.Active,
+            CreatedAt = new DateTime(2024, 1, 1),
+            UpdatedAt = new DateTime(2024, 1, 1)
+        };
     }
 
     // ---------- GetByIdAsync ----------
@@ -361,7 +389,7 @@ public class InitiativeServiceTests
             .Setup(x => x.GetByIdAsync(caller.Id))
             .ReturnsAsync(caller);
         _initiativeRepository
-            .Setup(x => x.NameExistsAsync(It.IsAny<string>()))
+            .Setup(x => x.NameExistsAsync(It.IsAny<string>(), It.IsAny<int?>()))
             .ReturnsAsync(false);
         _initiativeRepository
             .Setup(x => x.AddAsync(It.IsAny<Initiative>()))
@@ -392,7 +420,7 @@ public class InitiativeServiceTests
             .Setup(x => x.GetByIdAsync(caller.Id))
             .ReturnsAsync(caller);
         _initiativeRepository
-            .Setup(x => x.NameExistsAsync(It.IsAny<string>()))
+            .Setup(x => x.NameExistsAsync(It.IsAny<string>(), It.IsAny<int?>()))
             .ReturnsAsync(false);
 
         Initiative? captured = null;
@@ -534,7 +562,7 @@ public class InitiativeServiceTests
             .Setup(x => x.GetByIdAsync(sponsor.Id))
             .ReturnsAsync(sponsor);
         _initiativeRepository
-            .Setup(x => x.NameExistsAsync(It.IsAny<string>()))
+            .Setup(x => x.NameExistsAsync(It.IsAny<string>(), It.IsAny<int?>()))
             .ReturnsAsync(false);
         _initiativeRepository
             .Setup(x => x.AddAsync(It.IsAny<Initiative>()))
@@ -567,7 +595,7 @@ public class InitiativeServiceTests
             .Setup(x => x.GetByIdAsync(caller.Id))
             .ReturnsAsync(caller);
         _initiativeRepository
-            .Setup(x => x.NameExistsAsync(It.IsAny<string>()))
+            .Setup(x => x.NameExistsAsync(It.IsAny<string>(), It.IsAny<int?>()))
             .ReturnsAsync(true);
 
         var request = CreateValidRequest();
@@ -587,7 +615,7 @@ public class InitiativeServiceTests
             .Setup(x => x.GetByIdAsync(caller.Id))
             .ReturnsAsync(caller);
         _initiativeRepository
-            .Setup(x => x.NameExistsAsync("Trimmed Name"))
+            .Setup(x => x.NameExistsAsync("Trimmed Name", It.IsAny<int?>()))
             .ReturnsAsync(false);
         _initiativeRepository
             .Setup(x => x.AddAsync(It.IsAny<Initiative>()))
@@ -603,7 +631,8 @@ public class InitiativeServiceTests
         var result = await _sut.CreateAsync(request);
 
         result.Name.Should().Be("Trimmed Name");
-        _initiativeRepository.Verify(x => x.NameExistsAsync("Trimmed Name"), Times.Once);
+        _initiativeRepository.Verify(
+            x => x.NameExistsAsync("Trimmed Name", It.IsAny<int?>()), Times.Once);
     }
 
     // ---------- CreateAsync: defaults for optional enums ----------
@@ -618,7 +647,7 @@ public class InitiativeServiceTests
             .Setup(x => x.GetByIdAsync(caller.Id))
             .ReturnsAsync(caller);
         _initiativeRepository
-            .Setup(x => x.NameExistsAsync(It.IsAny<string>()))
+            .Setup(x => x.NameExistsAsync(It.IsAny<string>(), It.IsAny<int?>()))
             .ReturnsAsync(false);
         _initiativeRepository
             .Setup(x => x.AddAsync(It.IsAny<Initiative>()))
@@ -659,7 +688,7 @@ public class InitiativeServiceTests
             .Setup(x => x.GetByIdAsync(caller.Id))
             .ReturnsAsync(caller);
         _initiativeRepository
-            .Setup(x => x.NameExistsAsync(It.IsAny<string>()))
+            .Setup(x => x.NameExistsAsync(It.IsAny<string>(), It.IsAny<int?>()))
             .ReturnsAsync(false);
 
         Initiative? captured = null;
@@ -713,5 +742,249 @@ public class InitiativeServiceTests
         captured!.Name.Should().Be("My New Initiative");
         captured.BusinessArea.Should().Be(InitiativeFocusArea.InsightsAndMeasurement);
         captured.InitiativeType.Should().Be(InitiativeWorkform.Pilot);
+    }
+
+    // ---------- UpdateAsync ----------
+
+    private static UpdateInitiativeRequestDto CreateValidUpdateRequest()
+    {
+        return new UpdateInitiativeRequestDto
+        {
+            Name = "Valid Initiative Name",
+            Description = "A sufficiently long description of the initiative.",
+            BusinessArea = InitiativeFocusArea.Enablement,
+            InitiativeType = InitiativeWorkform.OperationalImprovement,
+            StartDate = new DateOnly(2024, 1, 1),
+            TargetEndDate = new DateOnly(2024, 6, 1)
+        };
+    }
+
+    [Fact]
+    public async Task UpdateAsync_InitiativeDoesNotExist_ThrowsNotFoundException()
+    {
+        _initiativeRepository.Setup(x => x.GetByIdAsync(1)).ReturnsAsync((Initiative?)null);
+
+        var act = () => _sut.UpdateAsync(1, CreateValidUpdateRequest());
+
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ValidRequest_PersistsAndReturnsMappedDto()
+    {
+        var owner = CreateUser(1, displayName: "Owner Person");
+        var newOwner = CreateUser(2, displayName: "New Owner");
+        var initiative = CreateInitiative(5, owner);
+
+        _initiativeRepository.Setup(x => x.GetByIdAsync(5)).ReturnsAsync(initiative);
+        _userRepository.Setup(x => x.GetByIdAsync(2)).ReturnsAsync(newOwner);
+        _initiativeRepository
+            .Setup(x => x.NameExistsAsync("Renamed Initiative", 5))
+            .ReturnsAsync(false);
+
+        var request = CreateValidUpdateRequest();
+        request.Name = "Renamed Initiative";
+        request.OwnerUserId = 2;
+
+        var result = await _sut.UpdateAsync(5, request);
+
+        _initiativeRepository.Verify(x => x.UpdateAsync(initiative), Times.Once);
+        initiative.Name.Should().Be("Renamed Initiative");
+        initiative.OwnerUserId.Should().Be(2);
+        result.Id.Should().Be(5);
+        result.Name.Should().Be("Renamed Initiative");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_NameUnchanged_NeverChecksForADuplicate()
+    {
+        var owner = CreateUser(1);
+        var initiative = CreateInitiative(5, owner);
+
+        _initiativeRepository.Setup(x => x.GetByIdAsync(5)).ReturnsAsync(initiative);
+        _userRepository.Setup(x => x.GetByIdAsync(owner.Id)).ReturnsAsync(owner);
+
+        var request = CreateValidUpdateRequest();
+        request.Name = initiative.Name;
+        request.OwnerUserId = owner.Id;
+
+        await _sut.UpdateAsync(5, request);
+
+        _initiativeRepository.Verify(
+            x => x.NameExistsAsync(It.IsAny<string>(), It.IsAny<int?>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_NameChangedToAnotherInitiativesName_ThrowsValidationException()
+    {
+        var owner = CreateUser(1);
+        var initiative = CreateInitiative(5, owner);
+
+        _initiativeRepository.Setup(x => x.GetByIdAsync(5)).ReturnsAsync(initiative);
+        _userRepository.Setup(x => x.GetByIdAsync(owner.Id)).ReturnsAsync(owner);
+        _initiativeRepository
+            .Setup(x => x.NameExistsAsync("Taken Name", 5))
+            .ReturnsAsync(true);
+
+        var request = CreateValidUpdateRequest();
+        request.Name = "Taken Name";
+        request.OwnerUserId = owner.Id;
+
+        var act = () => _sut.UpdateAsync(5, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_OwnerDoesNotExist_ThrowsValidationException()
+    {
+        var owner = CreateUser(1);
+        var initiative = CreateInitiative(5, owner);
+
+        _initiativeRepository.Setup(x => x.GetByIdAsync(5)).ReturnsAsync(initiative);
+        _userRepository.Setup(x => x.GetByIdAsync(999)).ReturnsAsync((User?)null);
+
+        var request = CreateValidUpdateRequest();
+        request.OwnerUserId = 999;
+
+        var act = () => _sut.UpdateAsync(5, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_OmittedOptionalFields_PreservesTheInitiativesCurrentValues()
+    {
+        var owner = CreateUser(1);
+        var initiative = CreateInitiative(5, owner);
+        initiative.Priority = InitiativePriority.High;
+        initiative.Health = InitiativeHealth.AtRisk;
+
+        _initiativeRepository.Setup(x => x.GetByIdAsync(5)).ReturnsAsync(initiative);
+        _userRepository.Setup(x => x.GetByIdAsync(owner.Id)).ReturnsAsync(owner);
+        _initiativeRepository
+            .Setup(x => x.NameExistsAsync(It.IsAny<string>(), It.IsAny<int?>()))
+            .ReturnsAsync(false);
+
+        var request = CreateValidUpdateRequest();
+        request.OwnerUserId = owner.Id;
+        // Priority and Health left null — an omission during Update means "unchanged",
+        // unlike Create, where the same omission would apply a fixed default.
+        request.Priority = null;
+        request.Health = null;
+
+        await _sut.UpdateAsync(5, request);
+
+        initiative.Priority.Should().Be(InitiativePriority.High);
+        initiative.Health.Should().Be(InitiativeHealth.AtRisk);
+    }
+
+    // ---------- GetDeletionImpactAsync ----------
+
+    [Fact]
+    public async Task GetDeletionImpactAsync_InitiativeDoesNotExist_ThrowsNotFoundException()
+    {
+        _initiativeRepository.Setup(x => x.GetByIdAsync(1)).ReturnsAsync((Initiative?)null);
+
+        var act = () => _sut.GetDeletionImpactAsync(1);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task GetDeletionImpactAsync_ReturnsCountsFromTheRepository()
+    {
+        var owner = CreateUser(1);
+        _initiativeRepository.Setup(x => x.GetByIdAsync(5)).ReturnsAsync(CreateInitiative(5, owner));
+        _initiativeRepository
+            .Setup(x => x.GetDeletionImpactAsync(5))
+            .ReturnsAsync((Contributions: 3, Tasks: 5, Activities: 12, Members: 2));
+
+        var result = await _sut.GetDeletionImpactAsync(5);
+
+        result.ContributionCount.Should().Be(3);
+        result.TaskCount.Should().Be(5);
+        result.ActivityCount.Should().Be(12);
+        result.TeamMemberCount.Should().Be(2);
+    }
+
+    // ---------- RemoveAsync ----------
+
+    [Fact]
+    public async Task RemoveAsync_InitiativeDoesNotExist_ThrowsNotFoundException()
+    {
+        _initiativeRepository.Setup(x => x.GetByIdAsync(1)).ReturnsAsync((Initiative?)null);
+
+        var act = () => _sut.RemoveAsync(1);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task RemoveAsync_DeletesEveryContributionAttachmentBlob_ThenRemovesTheInitiative()
+    {
+        var owner = CreateUser(1);
+        var initiative = CreateInitiative(5, owner);
+        var contributions = new List<Contribution>
+        {
+            new()
+            {
+                Id = 10,
+                InitiativeId = 5,
+                Attachments = new List<ContributionAttachment>
+                {
+                    new() { Id = 1, ContributionId = 10, FileName = "a.pdf", BlobName = "blob-a", ContentType = "application/pdf" },
+                    new() { Id = 2, ContributionId = 10, FileName = "b.pdf", BlobName = "blob-b", ContentType = "application/pdf" }
+                }
+            },
+            new()
+            {
+                Id = 11,
+                InitiativeId = 5,
+                Attachments = new List<ContributionAttachment>
+                {
+                    new() { Id = 3, ContributionId = 11, FileName = "c.pdf", BlobName = "blob-c", ContentType = "application/pdf" }
+                }
+            }
+        };
+
+        _initiativeRepository.Setup(x => x.GetByIdAsync(5)).ReturnsAsync(initiative);
+        _contributionRepository.Setup(x => x.GetByInitiativeIdAsync(5)).ReturnsAsync(contributions);
+
+        await _sut.RemoveAsync(5);
+
+        _fileStorage.Verify(
+            x => x.DeleteAsync(
+                FileStorageArea.ContributionAttachments, "blob-a", It.IsAny<CancellationToken>()),
+            Times.Once);
+        _fileStorage.Verify(
+            x => x.DeleteAsync(
+                FileStorageArea.ContributionAttachments, "blob-b", It.IsAny<CancellationToken>()),
+            Times.Once);
+        _fileStorage.Verify(
+            x => x.DeleteAsync(
+                FileStorageArea.ContributionAttachments, "blob-c", It.IsAny<CancellationToken>()),
+            Times.Once);
+        _initiativeRepository.Verify(x => x.RemoveAsync(initiative), Times.Once);
+    }
+
+    [Fact]
+    public async Task RemoveAsync_NoContributions_StillRemovesTheInitiative()
+    {
+        var owner = CreateUser(1);
+        var initiative = CreateInitiative(5, owner);
+
+        _initiativeRepository.Setup(x => x.GetByIdAsync(5)).ReturnsAsync(initiative);
+        _contributionRepository
+            .Setup(x => x.GetByInitiativeIdAsync(5))
+            .ReturnsAsync(new List<Contribution>());
+
+        await _sut.RemoveAsync(5);
+
+        _fileStorage.Verify(
+            x => x.DeleteAsync(
+                It.IsAny<FileStorageArea>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _initiativeRepository.Verify(x => x.RemoveAsync(initiative), Times.Once);
     }
 }

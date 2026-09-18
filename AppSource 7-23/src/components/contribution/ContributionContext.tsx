@@ -110,6 +110,7 @@ interface ContributionContextValue {
   contributions: Contribution[];
   isLoading: boolean;
   openAddContribution: (opts?: OpenAddContributionOptions) => void;
+  openEditContribution: (contributionId: string) => void;
 }
 
 const ContributionContext = createContext<ContributionContextValue | null>(null);
@@ -117,6 +118,7 @@ const ContributionContext = createContext<ContributionContextValue | null>(null)
 export function ContributionProvider({ children }: PropsWithChildren) {
   const [open, setOpen] = useState(false);
   const [preselectedInitiativeId, setPreselectedInitiativeId] = useState<string | undefined>(undefined);
+  const [editingContributionId, setEditingContributionId] = useState<string | undefined>(undefined);
 
   const { isAuthenticated } = useAuth();
   const { data: initiatives = [] } = useInitiativesQuery();
@@ -158,13 +160,20 @@ export function ContributionProvider({ children }: PropsWithChildren) {
   const isLoading = results.some((result) => result.isLoading);
 
   const openAddContribution = useCallback((opts?: OpenAddContributionOptions) => {
+    setEditingContributionId(undefined);
     setPreselectedInitiativeId(opts?.initiativeId);
     setOpen(true);
   }, []);
 
+  const openEditContribution = useCallback((contributionId: string) => {
+    setPreselectedInitiativeId(undefined);
+    setEditingContributionId(contributionId);
+    setOpen(true);
+  }, []);
+
   const value = useMemo(
-    () => ({ contributions, isLoading, openAddContribution }),
-    [contributions, isLoading, openAddContribution],
+    () => ({ contributions, isLoading, openAddContribution, openEditContribution }),
+    [contributions, isLoading, openAddContribution, openEditContribution],
   );
 
   return (
@@ -174,6 +183,7 @@ export function ContributionProvider({ children }: PropsWithChildren) {
         open={open}
         onOpenChange={setOpen}
         preselectedInitiativeId={preselectedInitiativeId}
+        editingContributionId={editingContributionId}
       />
     </ContributionContext.Provider>
   );

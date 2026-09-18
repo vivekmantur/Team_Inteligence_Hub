@@ -26,8 +26,8 @@ public class CopilotController : ControllerBase
     }
 
     [HttpPost("ask")]
-    public async Task<IActionResult> Ask(
-        [FromBody] CopilotQuestionRequestDto request,
+    public async Task<IActionResult> Ask( 
+        [FromBody] CopilotQuestionRequestDto request,   
         CancellationToken cancellationToken)
     {
         try

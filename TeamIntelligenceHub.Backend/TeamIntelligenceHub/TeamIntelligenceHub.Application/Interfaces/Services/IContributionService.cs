@@ -18,6 +18,26 @@ public interface IContributionService
 
     Task RemoveAsync(int contributionId, CancellationToken cancellationToken = default);
 
+    /// <summary>Every submitted Customer Story, across all Initiatives, newest first.</summary>
+    Task<List<CustomerStoryCardDto>> GetCustomerStoriesAsync();
+
+    /// <summary>Every submitted Testimonial, across all Initiatives, newest first.</summary>
+    Task<List<TestimonialCardDto>> GetTestimonialsAsync();
+
+    /// <summary>
+    /// Every customer story extracted from a Contribution attachment's document content,
+    /// newest first, for the Stories &amp; Evidence page's "Extracted from documents"
+    /// section.
+    /// </summary>
+    Task<List<DocumentCustomerStoryCardDto>> GetDocumentCustomerStoriesAsync();
+
+    /// <summary>
+    /// Every testimonial extracted from a Contribution attachment's document content,
+    /// newest first, for the Stories &amp; Evidence page's "Extracted from documents"
+    /// section.
+    /// </summary>
+    Task<List<DocumentTestimonialCardDto>> GetDocumentTestimonialsAsync();
+
     /// <summary>Distinct tags already in use, for the client's typeahead.</summary>
     Task<List<string>> GetTagVocabularyAsync(string? search, int? take);
 }

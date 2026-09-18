@@ -25,6 +25,7 @@ public class ContributionService : IContributionService
     private readonly IUserRepository _userRepository;
     private readonly ICurrentUserService _currentUserService;
     private readonly IFileStorage _fileStorage;
+    private readonly IDocumentTestimonialAndCustomerStoryRepository _documentInsightRepository;
 
     public ContributionService(
         IContributionRepository contributionRepository,
@@ -32,7 +33,8 @@ public class ContributionService : IContributionService
         IInitiativeMemberRepository memberRepository,
         IUserRepository userRepository,
         ICurrentUserService currentUserService,
-        IFileStorage fileStorage)
+        IFileStorage fileStorage,
+        IDocumentTestimonialAndCustomerStoryRepository documentInsightRepository)
     {
         _contributionRepository = contributionRepository;
         _initiativeRepository = initiativeRepository;
@@ -40,6 +42,7 @@ public class ContributionService : IContributionService
         _userRepository = userRepository;
         _currentUserService = currentUserService;
         _fileStorage = fileStorage;
+        _documentInsightRepository = documentInsightRepository;
     }
 
     public async Task<List<ContributionResponseDto>> GetByInitiativeAsync(int initiativeId)
@@ -167,6 +170,36 @@ public class ContributionService : IContributionService
         await _contributionRepository.RemoveAsync(contribution);
     }
 
+    public async Task<List<CustomerStoryCardDto>> GetCustomerStoriesAsync()
+    {
+        var contributions = await _contributionRepository.GetCustomerStoriesAsync();
+
+        return contributions.Select(MapToCustomerStoryCard).ToList();
+    }
+
+    public async Task<List<TestimonialCardDto>> GetTestimonialsAsync()
+    {
+        var contributions = await _contributionRepository.GetTestimonialsAsync();
+
+        return contributions.Select(MapToTestimonialCard).ToList();
+    }
+
+    public async Task<List<DocumentCustomerStoryCardDto>> GetDocumentCustomerStoriesAsync()
+    {
+        var rows = await _documentInsightRepository.GetByTypeAsync(
+            DocumentInsightType.CustomerStory);
+
+        return rows.Select(MapToDocumentCustomerStoryCard).ToList();
+    }
+
+    public async Task<List<DocumentTestimonialCardDto>> GetDocumentTestimonialsAsync()
+    {
+        var rows = await _documentInsightRepository.GetByTypeAsync(
+            DocumentInsightType.Testimonial);
+
+        return rows.Select(MapToDocumentTestimonialCard).ToList();
+    }
+
     public async Task<List<string>> GetTagVocabularyAsync(string? search, int? take)
     {
         var limit = Math.Clamp(
@@ -212,6 +245,9 @@ public class ContributionService : IContributionService
                 : null,
             types.Contains(ContributionType.CustomerStory)
                 ? BuildCustomerStory(contributionId, request.CustomerStory)
+                : null,
+            types.Contains(ContributionType.Testimonial)
+                ? BuildTestimonial(contributionId, request.Testimonial)
                 : null);
 
         // Runs last, so a failure here cannot leave people enrolled on an Initiative for
@@ -387,6 +423,26 @@ public class ContributionService : IContributionService
         };
     }
 
+    private static ContributionTestimonial? BuildTestimonial(
+        int contributionId,
+        ContributionTestimonialRequestDto? request)
+    {
+        if (request is null)
+        {
+            return null;
+        }
+
+        return new ContributionTestimonial
+        {
+            ContributionId = contributionId,
+            Quote = RequireText(request.Quote, "Quote"),
+            SpeakerName = RequireText(request.SpeakerName, "Speaker name"),
+            SpeakerRole = Clean(request.SpeakerRole),
+            Audience = request.Audience ?? TestimonialAudience.Stakeholder,
+            Sentiment = request.Sentiment ?? TestimonialSentiment.Positive
+        };
+    }
+
     /// <summary>
     /// Puts a credited person on the Initiative's team if they are not already on it.
     /// </summary>
@@ -435,6 +491,7 @@ public class ContributionService : IContributionService
         Check(request.Risk, ContributionType.Risk, "a risk");
         Check(request.AiPractice, ContributionType.AiBestPractice, "an AI best practice");
         Check(request.CustomerStory, ContributionType.CustomerStory, "a customer story");
+        Check(request.Testimonial, ContributionType.Testimonial, "a testimonial");
 
         void Check(object? section, ContributionType required, string label)
         {
@@ -690,7 +747,111 @@ public class ContributionService : IContributionService
                     Outcome = contribution.CustomerStory.Outcome,
                     Quote = contribution.CustomerStory.Quote,
                     BusinessValue = contribution.CustomerStory.BusinessValue
+                },
+            Testimonial = contribution.Testimonial is null
+                ? null
+                : new ContributionTestimonialDto
+                {
+                    Quote = contribution.Testimonial.Quote,
+                    SpeakerName = contribution.Testimonial.SpeakerName,
+                    SpeakerRole = contribution.Testimonial.SpeakerRole,
+                    Audience = contribution.Testimonial.Audience,
+                    Sentiment = contribution.Testimonial.Sentiment
                 }
+        };
+    }
+
+    /// <summary>
+    /// Assumes CustomerStory is not null: GetCustomerStoriesAsync already filtered on it.
+    /// </summary>
+    private static CustomerStoryCardDto MapToCustomerStoryCard(Contribution contribution)
+    {
+        var story = contribution.CustomerStory!;
+
+        return new CustomerStoryCardDto
+        {
+            Id = contribution.Id,
+            InitiativeId = contribution.InitiativeId,
+            InitiativeName = contribution.Initiative?.Name ?? string.Empty,
+            SubmittedByUserId = contribution.SubmittedByUserId,
+            Title = contribution.Title,
+            KeyTakeaway = contribution.KeyTakeaway,
+            SubmittedAt = contribution.SubmittedAt,
+            CustomerName = story.CustomerName,
+            Summary = story.Summary,
+            Outcome = story.Outcome,
+            Quote = story.Quote,
+            BusinessValue = story.BusinessValue
+        };
+    }
+
+    /// <summary>
+    /// Assumes Testimonial is not null: GetTestimonialsAsync already filtered on it.
+    /// </summary>
+    private static TestimonialCardDto MapToTestimonialCard(Contribution contribution)
+    {
+        var testimonial = contribution.Testimonial!;
+
+        return new TestimonialCardDto
+        {
+            Id = contribution.Id,
+            InitiativeId = contribution.InitiativeId,
+            InitiativeName = contribution.Initiative?.Name ?? string.Empty,
+            SubmittedByUserId = contribution.SubmittedByUserId,
+            SubmittedAt = contribution.SubmittedAt,
+            Quote = testimonial.Quote,
+            SpeakerName = testimonial.SpeakerName,
+            SpeakerRole = testimonial.SpeakerRole,
+            Audience = testimonial.Audience,
+            Sentiment = testimonial.Sentiment
+        };
+    }
+
+    /// <summary>
+    /// Assumes GetByTypeAsync's Include chain already loaded ContributionAttachment,
+    /// its Contribution, and that Contribution's Initiative.
+    /// </summary>
+    private static DocumentCustomerStoryCardDto MapToDocumentCustomerStoryCard(
+        DocumentTestimonialAndCustomerStory row)
+    {
+        var contribution = row.ContributionAttachment.Contribution;
+
+        return new DocumentCustomerStoryCardDto
+        {
+            Id = row.Id,
+            ContributionId = contribution.Id,
+            InitiativeId = contribution.InitiativeId,
+            InitiativeName = contribution.Initiative?.Name ?? string.Empty,
+            SourceFileName = row.ContributionAttachment.FileName,
+            CustomerName = row.CustomerName,
+            Summary = row.Summary,
+            Outcome = row.Outcome,
+            Quote = row.Quote,
+            BusinessValue = row.BusinessValue
+        };
+    }
+
+    /// <summary>
+    /// Assumes GetByTypeAsync's Include chain already loaded ContributionAttachment,
+    /// its Contribution, and that Contribution's Initiative.
+    /// </summary>
+    private static DocumentTestimonialCardDto MapToDocumentTestimonialCard(
+        DocumentTestimonialAndCustomerStory row)
+    {
+        var contribution = row.ContributionAttachment.Contribution;
+
+        return new DocumentTestimonialCardDto
+        {
+            Id = row.Id,
+            ContributionId = contribution.Id,
+            InitiativeId = contribution.InitiativeId,
+            InitiativeName = contribution.Initiative?.Name ?? string.Empty,
+            SourceFileName = row.ContributionAttachment.FileName,
+            Quote = row.Quote,
+            SpeakerName = row.SpeakerName,
+            SpeakerRole = row.SpeakerRole,
+            Audience = row.Audience,
+            Sentiment = row.Sentiment
         };
     }
 }

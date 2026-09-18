@@ -89,6 +89,7 @@ export function InitiativeTeamTab({ initiativeId }: Props) {
           roleOther: isPreset ? undefined : m.role,
           responsibilityArea: m.responsibilityArea ?? undefined,
           allocation: m.allocation ?? undefined,
+          totalAllocationAcrossInitiatives: m.totalAllocationAcrossInitiatives,
           avatarColor: avatarColorFor(m.userDisplayName),
           addedAt: m.joinedAt,
         } satisfies InitiativeTeamMember;
@@ -452,6 +453,18 @@ function MemberRow({
         <Stat icon={ListChecks} label="Tasks" value={`${openTasks}/${totalTasks}`} />
         <Stat icon={Activity} label="Activity" value={activityCount} />
       </div>
+
+      {typeof member.totalAllocationAcrossInitiatives === "number" && (
+        <div
+          className="hidden md:flex flex-col items-center justify-center rounded-lg bg-white/70 border border-white/60 px-3 py-1.5 text-center shrink-0"
+          title="Current total allocation"
+        >
+          <div className="text-[9px] text-muted-foreground uppercase tracking-wide">Total</div>
+          <div className="text-sm font-semibold">
+            {member.totalAllocationAcrossInitiatives}%
+          </div>
+        </div>
+      )}
 
       {canManage && (
         <div className="relative self-start md:self-center" ref={menuRef}>

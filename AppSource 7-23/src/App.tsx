@@ -8,18 +8,16 @@ import { AuthProvider } from "@/components/system/AuthProvider";
 import { RequireAuth } from "@/components/system/RequireAuth";
 import LoginPage from "./pages/login";
 import HomePage from "./pages/index";
-import AnalyticsPage from "./pages/analytics";
+import InsightsPage from "./pages/insights";
 import InitiativesPage from "./pages/initiatives";
 import NewInitiativePage from "./pages/initiatives-new";
 import InitiativeDetailPage from "./pages/initiative-detail";
 import TeamPage from "./pages/team";
-import CustomerZeroPage from "./pages/customer-zero";
-import TestimonialsPage from "./pages/testimonials";
+import StoriesPage from "./pages/stories";
 import ContentStudioPage from "./pages/content-studio";
 import KnowledgePage from "./pages/knowledge";
 import CopilotPage from "./pages/copilot";
-import AdminPage from "./pages/admin";
-import ArchitecturePage from "./pages/architecture";
+import AboutTeamPage from "./pages/about-team";
 import NotFoundPage from "./pages/not-found";
 import { AppErrorBoundary } from "./components/system/AppErrorBoundary";
 
@@ -61,17 +59,21 @@ function App() {
                   }
                 >
                   <Route index element={<HomePage />} />
-                  <Route path="analytics" element={<AnalyticsPage />} />
+                  <Route path="analytics" element={<InsightsPage />} />
                   <Route path="initiatives" element={<InitiativesPage />} />
                   <Route path="initiatives/new" element={<NewInitiativePage />} />
+                  <Route path="initiatives/:id/edit" element={<NewInitiativePage />} />
                   <Route path="initiatives/:id" element={<InitiativeDetailPage />} />
                   {/* Backward-compat redirects from legacy /projects routes */}
                   <Route path="projects" element={<Navigate to="/initiatives" replace />} />
                   <Route path="projects/new" element={<Navigate to="/initiatives/new" replace />} />
                   <Route path="projects/:id" element={<Navigate to="/initiatives" replace />} />
                   <Route path="team" element={<TeamPage />} />
-                  <Route path="customer-zero" element={<CustomerZeroPage />} />
-                  <Route path="testimonials" element={<TestimonialsPage />} />
+                  <Route path="stories" element={<StoriesPage />} />
+                  {/* Customer Zero and Testimonials were merged into the unified
+                      Stories & Evidence page — redirect old bookmarks/links. */}
+                  <Route path="customer-zero" element={<Navigate to="/stories" replace />} />
+                  <Route path="testimonials" element={<Navigate to="/stories" replace />} />
                   {/* Role Hub Analytics and Agent Analytics were folded into the
                       Insights tabs on /analytics — redirect old bookmarks/links. */}
                   <Route path="role-hub" element={<Navigate to="/analytics" replace />} />
@@ -79,8 +81,9 @@ function App() {
                   <Route path="content-studio" element={<ContentStudioPage />} />
                   <Route path="knowledge" element={<KnowledgePage />} />
                   <Route path="copilot" element={<CopilotPage />} />
-                  <Route path="admin" element={<AdminPage />} />
-                  <Route path="architecture" element={<ArchitecturePage />} />
+                  <Route path="aboutteam" element={<AboutTeamPage />} />
+                  {/* Old Administration route — replaced by /aboutteam. */}
+                  <Route path="admin" element={<Navigate to="/aboutteam" replace />} />
                   {/* NOTE(ai): DO NOT REMOVE — catch-all 404 page */}
                   <Route path="*" element={<NotFoundPage />} />
                 </Route>

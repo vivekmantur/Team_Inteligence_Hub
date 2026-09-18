@@ -148,6 +148,61 @@ public class ContributionsController : ControllerBase
     }
 
     /// <summary>
+    /// Every submitted Customer Story, across all Initiatives, newest first.
+    /// </summary>
+    /// <remarks>
+    /// Feeds the Stories &amp; Evidence page's Customer Zero grid, which is company-wide
+    /// rather than scoped to one Initiative like the other reads on this controller.
+    /// </remarks>
+    [HttpGet("contributions/customer-stories")]
+    public async Task<IActionResult> GetCustomerStories()
+    {
+        return Ok(await _contributionService.GetCustomerStoriesAsync());
+    }
+
+    /// <summary>
+    /// Every submitted Testimonial, across all Initiatives, newest first.
+    /// </summary>
+    /// <remarks>
+    /// Feeds the Stories &amp; Evidence page's Testimonial grid, company-wide like
+    /// GetCustomerStories.
+    /// </remarks>
+    [HttpGet("contributions/testimonials")]
+    public async Task<IActionResult> GetTestimonials()
+    {
+        return Ok(await _contributionService.GetTestimonialsAsync());
+    }
+
+    /// <summary>
+    /// Every customer story extracted from a Contribution attachment's document content,
+    /// newest first.
+    /// </summary>
+    /// <remarks>
+    /// Feeds the Stories &amp; Evidence page's "Extracted from documents" section, which
+    /// sits below the hand-written Customer Zero and Testimonial grids rather than mixed
+    /// into them.
+    /// </remarks>
+    [HttpGet("contributions/document-customer-stories")]
+    public async Task<IActionResult> GetDocumentCustomerStories()
+    {
+        return Ok(await _contributionService.GetDocumentCustomerStoriesAsync());
+    }
+
+    /// <summary>
+    /// Every testimonial extracted from a Contribution attachment's document content,
+    /// newest first.
+    /// </summary>
+    /// <remarks>
+    /// Feeds the Stories &amp; Evidence page's "Extracted from documents" section, same as
+    /// GetDocumentCustomerStories.
+    /// </remarks>
+    [HttpGet("contributions/document-testimonials")]
+    public async Task<IActionResult> GetDocumentTestimonials()
+    {
+        return Ok(await _contributionService.GetDocumentTestimonialsAsync());
+    }
+
+    /// <summary>
     /// Tags already in use, for the client's typeahead.
     /// </summary>
     /// <remarks>

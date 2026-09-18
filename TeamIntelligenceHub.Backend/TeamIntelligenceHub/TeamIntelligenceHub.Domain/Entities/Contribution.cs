@@ -109,4 +109,6 @@ public class Contribution
     public ContributionAiPractice? AiPractice { get; set; }
 
     public ContributionCustomerStory? CustomerStory { get; set; }
+
+    public ContributionTestimonial? Testimonial { get; set; }
 }

@@ -1,7 +1,9 @@
+import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiBaseUrl, apiFetch, getAccessToken, isApiConfigured } from "@/lib/api-client";
 import { membersQueryKey } from "./use-initiative-members";
 import { useAuth } from "./use-auth";
+import { useBackendUser } from "./use-backend-user";
 
 /**
  * The API speaks enum names; the wizard shows display labels. Translating between them is
@@ -25,6 +27,10 @@ export type ContributionPriorityWire = "Low" | "Medium" | "High" | "Critical";
 export type ContributionStatusWire = "Draft" | "Submitted";
 
 export type RiskSeverityWire = "Low" | "Medium" | "High" | "Critical";
+
+export type TestimonialAudienceWire = "Leadership" | "Stakeholder" | "Customer" | "Team";
+
+export type TestimonialSentimentWire = "Positive" | "Neutral" | "Constructive";
 
 export type ContributionReuseTargetWire =
   | "ExecutiveBrief"
@@ -155,6 +161,14 @@ export type ContributionCustomerStoryRecord = {
   businessValue: string | null;
 };
 
+export type ContributionTestimonialRecord = {
+  quote: string;
+  speakerName: string;
+  speakerRole: string | null;
+  audience: TestimonialAudienceWire;
+  sentiment: TestimonialSentimentWire;
+};
+
 /** Mirrors ContributionResponseDto. */
 export type ContributionRecord = {
   id: number;
@@ -181,6 +195,7 @@ export type ContributionRecord = {
   risk: ContributionRiskRecord | null;
   aiPractice: ContributionAiPracticeRecord | null;
   customerStory: ContributionCustomerStoryRecord | null;
+  testimonial: ContributionTestimonialRecord | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -238,6 +253,79 @@ export type SaveContributionRequest = {
     quote?: string | null;
     businessValue?: string | null;
   } | null;
+  testimonial?: {
+    quote: string;
+    speakerName: string;
+    speakerRole?: string | null;
+    audience?: TestimonialAudienceWire;
+    sentiment?: TestimonialSentimentWire;
+  } | null;
+};
+
+/** Mirrors CustomerStoryCardDto — the slim shape the Stories & Evidence grid reads. */
+export type CustomerStoryCardRecord = {
+  id: number;
+  initiativeId: number;
+  initiativeName: string;
+  submittedByUserId: number;
+  title: string;
+  keyTakeaway: string | null;
+  submittedAt: string | null;
+  customerName: string;
+  summary: string | null;
+  outcome: string | null;
+  quote: string | null;
+  businessValue: string | null;
+};
+
+/** Mirrors TestimonialCardDto — the slim shape the Stories & Evidence grid reads. */
+export type TestimonialCardRecord = {
+  id: number;
+  initiativeId: number;
+  initiativeName: string;
+  submittedByUserId: number;
+  submittedAt: string | null;
+  quote: string;
+  speakerName: string;
+  speakerRole: string | null;
+  audience: TestimonialAudienceWire;
+  sentiment: TestimonialSentimentWire;
+};
+
+/**
+ * Mirrors DocumentCustomerStoryCardDto — a customer story extracted from a Contribution
+ * attachment's document content, for the Stories & Evidence page's "Extracted from
+ * documents" section. Carries a source file name instead of a contributor-written title.
+ */
+export type DocumentCustomerStoryCardRecord = {
+  id: number;
+  contributionId: number;
+  initiativeId: number;
+  initiativeName: string;
+  sourceFileName: string;
+  customerName: string | null;
+  summary: string | null;
+  outcome: string | null;
+  quote: string | null;
+  businessValue: string | null;
+};
+
+/**
+ * Mirrors DocumentTestimonialCardDto — a testimonial extracted from a Contribution
+ * attachment's document content. See DocumentCustomerStoryCardRecord for why this is
+ * separate from TestimonialCardRecord.
+ */
+export type DocumentTestimonialCardRecord = {
+  id: number;
+  contributionId: number;
+  initiativeId: number;
+  initiativeName: string;
+  sourceFileName: string;
+  quote: string | null;
+  speakerName: string | null;
+  speakerRole: string | null;
+  audience: TestimonialAudienceWire | null;
+  sentiment: TestimonialSentimentWire | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -251,6 +339,16 @@ export const contributionQueryKey = (contributionId: number) =>
   ["contributions", contributionId] as const;
 
 export const contributionTagsQueryKey = ["contributions", "tags"] as const;
+
+export const customerStoriesQueryKey = ["contributions", "customer-stories"] as const;
+
+export const testimonialsQueryKey = ["contributions", "testimonials"] as const;
+
+export const documentCustomerStoriesQueryKey =
+  ["contributions", "document-customer-stories"] as const;
+
+export const documentTestimonialsQueryKey =
+  ["contributions", "document-testimonials"] as const;
 
 export function useInitiativeContributions(initiativeId: number | null) {
   const { isAuthenticated } = useAuth();
@@ -296,6 +394,105 @@ export function useContributionTags(search?: string) {
     enabled: isAuthenticated && isApiConfigured,
     staleTime: 5 * 60 * 1000,
   });
+}
+
+/**
+ * Every submitted Customer Story, across all Initiatives, for the Stories & Evidence
+ * page's Customer Zero grid — company-wide, unlike useInitiativeContributions.
+ */
+export function useCustomerStories() {
+  const { isAuthenticated } = useAuth();
+
+  return useQuery({
+    queryKey: customerStoriesQueryKey,
+    queryFn: () =>
+      apiFetch<CustomerStoryCardRecord[]>("/api/contributions/customer-stories"),
+    enabled: isAuthenticated && isApiConfigured,
+  });
+}
+
+/**
+ * Every submitted Testimonial, across all Initiatives, for the Stories & Evidence page's
+ * Testimonial grid — company-wide, same as useCustomerStories.
+ */
+export function useTestimonials() {
+  const { isAuthenticated } = useAuth();
+
+  return useQuery({
+    queryKey: testimonialsQueryKey,
+    queryFn: () => apiFetch<TestimonialCardRecord[]>("/api/contributions/testimonials"),
+    enabled: isAuthenticated && isApiConfigured,
+  });
+}
+
+/**
+ * Every customer story extracted from a Contribution attachment's document content, for
+ * the Stories & Evidence page's "Extracted from documents" section.
+ */
+export function useDocumentCustomerStories() {
+  const { isAuthenticated } = useAuth();
+
+  return useQuery({
+    queryKey: documentCustomerStoriesQueryKey,
+    queryFn: () =>
+      apiFetch<DocumentCustomerStoryCardRecord[]>(
+        "/api/contributions/document-customer-stories",
+      ),
+    enabled: isAuthenticated && isApiConfigured,
+  });
+}
+
+/**
+ * Every testimonial extracted from a Contribution attachment's document content, same
+ * section as useDocumentCustomerStories.
+ */
+export function useDocumentTestimonials() {
+  const { isAuthenticated } = useAuth();
+
+  return useQuery({
+    queryKey: documentTestimonialsQueryKey,
+    queryFn: () =>
+      apiFetch<DocumentTestimonialCardRecord[]>(
+        "/api/contributions/document-testimonials",
+      ),
+    enabled: isAuthenticated && isApiConfigured,
+  });
+}
+
+function isInCurrentMonth(iso: string | null): boolean {
+  if (!iso) return false;
+
+  const date = new Date(iso);
+  const now = new Date();
+
+  return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+}
+
+/**
+ * How many Customer Story / Testimonial contributions the signed-in user has submitted
+ * this calendar month — the Home page's "Submitted evidence" highlight.
+ *
+ * Reuses the same company-wide reads Stories & Evidence already makes rather than a
+ * dedicated endpoint, filtering client-side to this user and this month.
+ */
+export function useMySubmittedEvidenceThisMonthCount() {
+  const { data: backendUser } = useBackendUser();
+  const { data: customerStories = [], isLoading: isLoadingCustomerStories } =
+    useCustomerStories();
+  const { data: testimonials = [], isLoading: isLoadingTestimonials } = useTestimonials();
+
+  const count = useMemo(() => {
+    if (!backendUser) return 0;
+
+    const mine = (items: { submittedByUserId: number; submittedAt: string | null }[]) =>
+      items.filter(
+        (item) => item.submittedByUserId === backendUser.id && isInCurrentMonth(item.submittedAt),
+      ).length;
+
+    return mine(customerStories) + mine(testimonials);
+  }, [backendUser, customerStories, testimonials]);
+
+  return { count, isLoading: isLoadingCustomerStories || isLoadingTestimonials };
 }
 
 // ---------------------------------------------------------------------------

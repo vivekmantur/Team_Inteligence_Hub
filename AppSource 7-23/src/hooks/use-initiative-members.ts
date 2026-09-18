@@ -12,6 +12,8 @@ export type InitiativeMemberRecord = {
   role: string;
   responsibilityArea: string | null;
   allocation: number | null;
+  /** This person's Allocation summed across every Initiative they belong to, not just this one. */
+  totalAllocationAcrossInitiatives: number;
   joinedAt: string;
 };
 

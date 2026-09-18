@@ -30,10 +30,15 @@ public class InitiativeRepository : IInitiativeRepository
             .ToListAsync();
     }
 
-    public async Task<bool> NameExistsAsync(string name)
+    public async Task<List<Initiative>> GetForReadinessInsightsAsync()
+    {
+        return await _context.Initiatives.ToListAsync();
+    }
+
+    public async Task<bool> NameExistsAsync(string name, int? excludeInitiativeId = null)
     {
         return await _context.Initiatives
-            .AnyAsync(x => x.Name == name);
+            .AnyAsync(x => x.Name == name && x.Id != excludeInitiativeId);
     }
 
     public async Task<Initiative> AddAsync(Initiative initiative)
@@ -55,5 +60,37 @@ public class InitiativeRepository : IInitiativeRepository
         }
 
         return initiative;
+    }
+
+    public async Task UpdateAsync(Initiative initiative)
+    {
+        _context.Initiatives.Update(initiative);
+
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task RemoveAsync(Initiative initiative)
+    {
+        // Contributions, InitiativeTasks, Activities, and InitiativeMembers all cascade
+        // in the database — the caller is responsible for anything cascade delete does
+        // not reach, such as blob attachments.
+        _context.Initiatives.Remove(initiative);
+
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<(int Contributions, int Tasks, int Activities, int Members)>
+        GetDeletionImpactAsync(int initiativeId)
+    {
+        var contributions = await _context.Contributions
+            .CountAsync(x => x.InitiativeId == initiativeId);
+        var tasks = await _context.Tasks
+            .CountAsync(x => x.InitiativeId == initiativeId);
+        var activities = await _context.Activities
+            .CountAsync(x => x.InitiativeId == initiativeId);
+        var members = await _context.InitiativeMembers
+            .CountAsync(x => x.InitiativeId == initiativeId);
+
+        return (contributions, tasks, activities, members);
     }
 }

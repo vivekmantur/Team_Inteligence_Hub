@@ -27,19 +27,22 @@ public class ContributionAttachmentService : IContributionAttachmentService
     private readonly IUserRepository _userRepository;
     private readonly ICurrentUserService _currentUserService;
     private readonly IFileStorage _fileStorage;
+    private readonly IDocumentInsightExtractionQueue _extractionQueue;
 
     public ContributionAttachmentService(
         IContributionAttachmentRepository attachmentRepository,
         IContributionRepository contributionRepository,
         IUserRepository userRepository,
         ICurrentUserService currentUserService,
-        IFileStorage fileStorage)
+        IFileStorage fileStorage,
+        IDocumentInsightExtractionQueue extractionQueue)
     {
         _attachmentRepository = attachmentRepository;
         _contributionRepository = contributionRepository;
         _userRepository = userRepository;
         _currentUserService = currentUserService;
         _fileStorage = fileStorage;
+        _extractionQueue = extractionQueue;
     }
 
     public async Task<ContributionAttachmentDto> UploadAsync(
@@ -91,6 +94,8 @@ public class ContributionAttachmentService : IContributionAttachmentService
                     FileSize = upload.Length,
                     CreatedAt = DateTime.UtcNow
                 });
+
+            await _extractionQueue.EnqueueAsync(attachment.Id, cancellationToken);
 
             return MapToDto(attachment);
         }

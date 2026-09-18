@@ -251,6 +251,38 @@ export function useInitiativeQuery(id: number | null) {
   });
 }
 
+/** One role's coverage row, mirroring EnterpriseRoleCoverageDto. */
+export type EnterpriseRoleCoverageRecord = {
+  code: EnterpriseRoleWire;
+  initiativeCount: number;
+  highImpactCount: number;
+};
+
+/**
+ * Mirrors ReadinessInsightsDto — the aggregate counts behind the Insights page's
+ * Readiness and Audience & Roles tabs.
+ */
+export type ReadinessInsights = {
+  activeInitiatives: number;
+  atRisk: number;
+  needsAttention: number;
+  totalEnterpriseRoles: number;
+  enterpriseRolesCovered: number;
+  roleCoverage: EnterpriseRoleCoverageRecord[];
+};
+
+export const readinessInsightsQueryKey = ["initiatives", "readiness-insights"] as const;
+
+export function useReadinessInsights() {
+  const { isAuthenticated } = useAuth();
+
+  return useQuery({
+    queryKey: readinessInsightsQueryKey,
+    queryFn: () => apiFetch<ReadinessInsights>("/api/initiatives/insights"),
+    enabled: isAuthenticated && isApiConfigured,
+  });
+}
+
 /**
  * Creates an Initiative and refreshes the list so the new record shows up without a reload.
  */
@@ -263,6 +295,70 @@ export function useCreateInitiative() {
         method: "POST",
         body: JSON.stringify(request),
       }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: initiativesQueryKey });
+    },
+  });
+}
+
+/**
+ * Replaces an Initiative's fields and refreshes both the list and its own cached detail.
+ * Same request shape as create — every field the New Initiative form collects is
+ * editable, mirroring UpdateInitiativeRequestDto's inheritance from the create DTO.
+ */
+export function useUpdateInitiative(id: number | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (request: CreateInitiativeRequest) =>
+      apiFetch<Initiative>(`/api/initiatives/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(request),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: initiativesQueryKey });
+      if (id !== null) {
+        void queryClient.invalidateQueries({ queryKey: [...initiativesQueryKey, id] });
+      }
+    },
+  });
+}
+
+/** Mirrors InitiativeDeletionImpactDto — what deleting an Initiative would also remove. */
+export type InitiativeDeletionImpact = {
+  contributionCount: number;
+  taskCount: number;
+  activityCount: number;
+  teamMemberCount: number;
+};
+
+/**
+ * Loads the counts a delete confirmation dialog names, for one Initiative at a time.
+ * Only enabled while id is set, so this never fires until the user actually opens the
+ * delete dialog for a specific card.
+ */
+export function useInitiativeDeletionImpact(id: number | null) {
+  const { isAuthenticated } = useAuth();
+
+  return useQuery({
+    queryKey: [...initiativesQueryKey, id, "deletion-impact"] as const,
+    queryFn: () =>
+      apiFetch<InitiativeDeletionImpact>(`/api/initiatives/${id}/deletion-impact`),
+    enabled: isAuthenticated && isApiConfigured && id !== null,
+  });
+}
+
+/**
+ * Deletes an Initiative and everything cascading from it (Contributions, Tasks,
+ * Activity, Team members — see useInitiativeDeletionImpact for the counts shown before
+ * this is called).
+ */
+export function useDeleteInitiative() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<void>(`/api/initiatives/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: initiativesQueryKey });
     },

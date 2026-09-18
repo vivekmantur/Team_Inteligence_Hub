@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TeamIntelligenceHub.Application.DTOs;
+using TeamIntelligenceHub.Application.Exceptions;
 using TeamIntelligenceHub.Application.Interfaces.Services;
 
 namespace TeamIntelligenceHub.API.Controllers;
@@ -66,5 +68,30 @@ public class UsersController : ControllerBase
         }
 
         return Ok(user);
+    }
+
+    /// <summary>
+    /// Sets a user's AppRole — the free-text role/title shown on the Team page. Only the
+    /// signed-in user may edit their own; the id in the route exists so the client can
+    /// keep using the same shape it already has, not to let anyone target someone else.
+    /// </summary>
+    [HttpPut("{id:int}/app-role")]
+    public async Task<IActionResult> UpdateAppRole(
+        int id, [FromBody] UpdateAppRoleRequestDto request)
+    {
+        try
+        {
+            var updated = await _userService.UpdateAppRoleAsync(id, request);
+
+            return Ok(updated);
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
     }
 }

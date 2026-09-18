@@ -1,4 +1,5 @@
 ﻿using TeamIntelligenceHub.Application.DTOs;
+using TeamIntelligenceHub.Application.Exceptions;
 using TeamIntelligenceHub.Application.Interfaces;
 using TeamIntelligenceHub.Application.Interfaces.Repositories;
 using TeamIntelligenceHub.Application.Interfaces.Services;
@@ -9,13 +10,16 @@ namespace TeamIntelligenceHub.Application.Services;
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
+    private readonly IInitiativeMemberRepository _memberRepository;
     private readonly ICurrentUserService _currentUserService;
 
     public UserService(
         IUserRepository userRepository,
+        IInitiativeMemberRepository memberRepository,
         ICurrentUserService currentUserService)
     {
         _userRepository = userRepository;
+        _memberRepository = memberRepository;
         _currentUserService = currentUserService;
     }
 
@@ -28,15 +32,18 @@ public class UserService : IUserService
             return null;
         }
 
-        return MapToDto(user);
+        return MapToDto(user, await GetTotalAllocationAsync(id));
     }
 
     public async Task<List<UserResponseDto>> GetAllAsync()
     {
         var users = await _userRepository.GetAllAsync();
 
+        var totalAllocationByUserId = await _memberRepository
+            .GetTotalAllocationByUserIdsAsync(users.Select(u => u.Id).Distinct().ToList());
+
         return users
-            .Select(MapToDto)
+            .Select(u => MapToDto(u, totalAllocationByUserId.GetValueOrDefault(u.Id)))
             .ToList();
     }
 
@@ -127,10 +134,45 @@ public class UserService : IUserService
             await _userRepository.UpdateAsync(user);
         }
 
-        return MapToDto(user);
+        return MapToDto(user, await GetTotalAllocationAsync(user.Id));
     }
 
-    private static UserResponseDto MapToDto(User user)
+    public async Task<UserResponseDto> UpdateAppRoleAsync(int userId, UpdateAppRoleRequestDto request)
+    {
+        var entraObjectId = _currentUserService.EntraObjectId;
+
+        if (string.IsNullOrWhiteSpace(entraObjectId))
+        {
+            throw new UnauthorizedAccessException("Entra Object ID was not found.");
+        }
+
+        var caller = await _userRepository.GetByEntraObjectIdAsync(entraObjectId)
+            ?? throw new ValidationException(
+                "Your profile has not been created yet. Reload the app and try again.");
+
+        // Not just "no one else can rename you" — this is the only path that writes
+        // AppRole at all, so it doubles as the entire access rule for the feature.
+        if (caller.Id != userId)
+        {
+            throw new ValidationException("You can only edit your own role.");
+        }
+
+        caller.AppRole = request.AppRole.Trim();
+
+        await _userRepository.UpdateAsync(caller);
+
+        return MapToDto(caller, await GetTotalAllocationAsync(caller.Id));
+    }
+
+    private async Task<decimal> GetTotalAllocationAsync(int userId)
+    {
+        var totals = await _memberRepository.GetTotalAllocationByUserIdsAsync([userId]);
+
+        return totals.GetValueOrDefault(userId);
+    }
+
+    private static UserResponseDto MapToDto(
+        User user, decimal totalAllocationAcrossInitiatives)
     {
         return new UserResponseDto
         {
@@ -138,9 +180,11 @@ public class UserService : IUserService
             EntraObjectId = user.EntraObjectId,
             Email = user.Email,
             DisplayName = user.DisplayName,
+            AppRole = user.AppRole,
             IsActive = user.IsActive,
             CreatedAt = user.CreatedAt,
-            LastLoginAt = user.LastLoginAt
+            LastLoginAt = user.LastLoginAt,
+            TotalAllocationAcrossInitiatives = totalAllocationAcrossInitiatives
         };
     }
 }

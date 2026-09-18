@@ -18,5 +18,11 @@ public class InitiativeMemberResponseDto
 
     public decimal? Allocation { get; set; }
 
+    /// <summary>
+    /// This person's Allocation summed across every Initiative they belong to, not just
+    /// this one — untracked rows count as 0, never as unknown.
+    /// </summary>
+    public decimal TotalAllocationAcrossInitiatives { get; set; }
+
     public DateTime JoinedAt { get; set; }
 }
