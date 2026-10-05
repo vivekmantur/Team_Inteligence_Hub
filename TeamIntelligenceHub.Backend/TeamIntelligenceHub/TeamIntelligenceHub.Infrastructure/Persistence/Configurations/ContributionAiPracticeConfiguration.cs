@@ -4,9 +4,13 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Configures the table, keys, columns, and relationships for the <see cref="ContributionAiPractice"/> entity.
+/// </summary>
 public class ContributionAiPracticeConfiguration
     : IEntityTypeConfiguration<ContributionAiPractice>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<ContributionAiPractice> builder)
     {
         builder.ToTable("ContributionAiPractices");

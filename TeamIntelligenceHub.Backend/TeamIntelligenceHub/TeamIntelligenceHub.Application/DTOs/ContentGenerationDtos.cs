@@ -10,14 +10,8 @@ namespace TeamIntelligenceHub.Application.DTOs;
 
 /// <summary>
 /// Payload for generating one piece of Content Studio output against an Initiative.
+/// It carries only the user's selections; the backend loads the Initiative's data itself.
 /// </summary>
-/// <remarks>
-/// The Initiative comes from the route, never the body, matching
-/// CreateContributionRequestDto's split with ContributionsController. Carries only the
-/// four generation selections — no Contribution, Metric, Risk, Customer Story, AI
-/// Practice, or Attachment record or id is ever accepted here; the backend loads all of
-/// that itself once the Initiative is confirmed to exist.
-/// </remarks>
 public class ContentGenerationRequestDto : IValidatableObject
 {
     public const int InstructionsMaxLength = 1000;

@@ -2,11 +2,8 @@ namespace TeamIntelligenceHub.Domain.Entities;
 
 /// <summary>
 /// A real customer outcome. Present only when the contribution is a Customer Story.
+/// Quote is its own column because the Testimonials page reads it.
 /// </summary>
-/// <remarks>
-/// Shared primary key with Contribution. Quote is what the Testimonials page reads, which
-/// is why it is its own column rather than part of Summary.
-/// </remarks>
 public class ContributionCustomerStory
 {
     public const int CustomerNameMaxLength = 200;

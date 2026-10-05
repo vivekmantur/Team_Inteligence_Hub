@@ -1,3 +1,5 @@
+// 1. Queue a contribution attachment for testimonial and customer story extraction
+
 using System.Text;
 using Azure.Identity;
 using Azure.Storage.Queues;
@@ -9,17 +11,12 @@ namespace TeamIntelligenceHub.Infrastructure.Storage;
 
 /// <summary>
 /// Sends a ContributionAttachment's id to the Storage Queue that
-/// TestimonialAndCustomerStoryExtractionFunction listens on.
+/// TestimonialAndCustomerStoryExtractionFunction listens on. It reuses BlobStorageOptions
+/// because the queue lives in the same storage account.
 /// </summary>
-/// <remarks>
-/// Reuses BlobStorageOptions' connection settings rather than a separate option class:
-/// the queue lives in the same storage account as the blob containers, so there is only
-/// one account to point at. The queue name is fixed rather than configurable because it
-/// is a wiring detail shared with the Function's own [QueueTrigger] attribute, not
-/// something that varies per environment.
-/// </remarks>
 public class StorageQueueDocumentInsightExtractionQueue : IDocumentInsightExtractionQueue
 {
+    /// <summary>The queue that the extraction Function listens on.</summary>
     private const string QueueName = "testimonial-customer-story-extraction";
 
     /// <summary>
@@ -38,6 +35,11 @@ public class StorageQueueDocumentInsightExtractionQueue : IDocumentInsightExtrac
     private readonly ILogger<StorageQueueDocumentInsightExtractionQueue> _logger;
     private readonly Lazy<QueueClient> _client;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StorageQueueDocumentInsightExtractionQueue"/> class.
+    /// </summary>
+    /// <param name="options">The blob storage settings whose storage account also holds the queue.</param>
+    /// <param name="logger">The logger that records skipped and failed enqueues.</param>
     public StorageQueueDocumentInsightExtractionQueue(
         IOptions<BlobStorageOptions> options,
         ILogger<StorageQueueDocumentInsightExtractionQueue> logger)
@@ -48,6 +50,7 @@ public class StorageQueueDocumentInsightExtractionQueue : IDocumentInsightExtrac
             CreateClient, LazyThreadSafetyMode.PublicationOnly);
     }
 
+    /// <summary>Creates the queue client from the connection string or account URI and creates the queue when it does not exist yet.</summary>
     private QueueClient CreateClient()
     {
         var client = !string.IsNullOrWhiteSpace(_options.ConnectionString)
@@ -61,6 +64,7 @@ public class StorageQueueDocumentInsightExtractionQueue : IDocumentInsightExtrac
         return client;
     }
 
+    /// <inheritdoc />
     public async Task EnqueueAsync(
         int contributionAttachmentId, CancellationToken cancellationToken = default)
     {

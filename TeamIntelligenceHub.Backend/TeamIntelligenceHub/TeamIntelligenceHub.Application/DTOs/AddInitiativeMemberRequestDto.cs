@@ -4,15 +4,9 @@ using TeamIntelligenceHub.Domain.Entities;
 namespace TeamIntelligenceHub.Application.DTOs;
 
 /// <summary>
-/// Payload for adding a person to an Initiative's team.
+/// Payload for adding a person to an Initiative's team. The Initiative comes from the
+/// route, and Role is the resolved text (for example "Legal Reviewer", never "Other").
 /// </summary>
-/// <remarks>
-/// The Initiative is taken from the route, not the body, so a request cannot claim to
-/// belong to one Initiative while being posted to another.
-///
-/// Role is free text. The UI offers a fixed list plus "Other" with a custom value, so
-/// the caller sends the resolved string — "Legal Reviewer", never the literal "Other".
-/// </remarks>
 public class AddInitiativeMemberRequestDto
 {
     [Required(ErrorMessage = "A team member is required.")]

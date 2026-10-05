@@ -3,13 +3,9 @@ using TeamIntelligenceHub.Domain.Enums;
 namespace TeamIntelligenceHub.Domain.Entities;
 
 /// <summary>
-/// A pointer to evidence that lives somewhere else.
+/// A pointer to evidence that lives somewhere else. Both of the wizard's link inputs land
+/// here, so every URL has one place to look.
 /// </summary>
-/// <remarks>
-/// Both of the wizard's link inputs land here: step 5's link list, and the Supporting
-/// Asset section in step 4, which contributed the Description column. Holding a single
-/// URL in two tables would mean two places to look for it.
-/// </remarks>
 public class ContributionLink
 {
     public const int UrlMaxLength = 2048;

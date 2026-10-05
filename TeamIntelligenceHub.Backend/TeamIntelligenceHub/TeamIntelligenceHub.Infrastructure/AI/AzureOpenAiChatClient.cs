@@ -1,3 +1,5 @@
+// 1. Complete a chat from a system prompt and a user prompt
+
 using Azure;
 using Azure.AI.OpenAI;
 using Azure.Identity;
@@ -17,12 +19,17 @@ public class AzureOpenAiChatClient : IChatCompletionClient
     private readonly AzureOpenAiOptions _options;
     private readonly Lazy<ChatClient> _client;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AzureOpenAiChatClient"/> class.
+    /// </summary>
+    /// <param name="options">The Azure OpenAI settings that name the endpoint and chat deployment.</param>
     public AzureOpenAiChatClient(IOptions<AzureOpenAiOptions> options)
     {
         _options = options.Value;
         _client = new Lazy<ChatClient>(CreateClient);
     }
 
+    /// <summary>Creates the chat client, using the API key when one is set and a managed identity otherwise.</summary>
     private ChatClient CreateClient()
     {
         if (!_options.IsConfigured)
@@ -42,6 +49,7 @@ public class AzureOpenAiChatClient : IChatCompletionClient
         return azureClient.GetChatClient(_options.ChatDeploymentName);
     }
 
+    /// <inheritdoc />
     public async Task<string> CompleteAsync(
         string systemPrompt,
         string userPrompt,

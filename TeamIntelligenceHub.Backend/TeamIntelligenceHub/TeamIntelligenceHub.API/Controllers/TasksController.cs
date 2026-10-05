@@ -1,4 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿// 1. Get all tasks for an initiative
+// 2. Get one task by ID
+// 3. Create a task
+// 4. Update a task
+// 5. Delete a task
+
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TeamIntelligenceHub.Application.DTOs;
 using TeamIntelligenceHub.Application.Exceptions;
@@ -7,12 +13,9 @@ using TeamIntelligenceHub.Application.Interfaces.Services;
 namespace TeamIntelligenceHub.API.Controllers;
 
 /// <summary>
-/// Tasks belonging to one Initiative.
+/// Manages the tasks belonging to one Initiative. The URL fixes the parent, so a request
+/// cannot place a task on a different Initiative.
 /// </summary>
-/// <remarks>
-/// Nested under the Initiative, so the parent is fixed by the URL and a request cannot
-/// place a task on a different Initiative than the one it was posted to.
-/// </remarks>
 [ApiController]
 [Authorize]
 [Route("api/initiatives/{initiativeId:int}/tasks")]
@@ -21,6 +24,11 @@ public class TasksController : ControllerBase
     private readonly IInitiativeTaskService _taskService;
     private readonly ILogger<TasksController> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TasksController"/> class.
+    /// </summary>
+    /// <param name="taskService">The service that handles task operations.</param>
+    /// <param name="logger">The logger used to record rejected tasks.</param>
     public TasksController(
         IInitiativeTaskService taskService,
         ILogger<TasksController> logger)
@@ -29,7 +37,11 @@ public class TasksController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>Returns the Initiative's tasks.</summary>
+    /// <summary>
+    /// Gets the Initiative's tasks.
+    /// </summary>
+    /// <param name="initiativeId">The Initiative whose tasks are returned.</param>
+    /// <returns>200 OK with the tasks, or 404 Not Found when the Initiative does not exist.</returns>
     [HttpGet]
     public async Task<IActionResult> GetAll(int initiativeId)
     {
@@ -45,7 +57,12 @@ public class TasksController : ControllerBase
         }
     }
 
-    /// <summary>Returns the task with the given id, or 404 when it does not exist.</summary>
+    /// <summary>
+    /// Gets the task with the given ID within an Initiative.
+    /// </summary>
+    /// <param name="initiativeId">The Initiative that owns the task.</param>
+    /// <param name="taskId">The task identifier.</param>
+    /// <returns>200 OK with the task, or 404 Not Found when the Initiative or task does not exist.</returns>
     [HttpGet("{taskId:int}")]
     public async Task<IActionResult> GetById(int initiativeId, int taskId)
     {
@@ -61,7 +78,12 @@ public class TasksController : ControllerBase
         }
     }
 
-    /// <summary>Creates a task on the Initiative and returns it with 201 Created.</summary>
+    /// <summary>
+    /// Creates a task on the Initiative.
+    /// </summary>
+    /// <param name="initiativeId">The Initiative the task belongs to.</param>
+    /// <param name="request">The details of the task to create.</param>
+    /// <returns>201 Created with the new task, 404 Not Found when the Initiative does not exist, 400 Bad Request when validation fails, or 401 Unauthorized when the caller cannot be identified.</returns>
     [HttpPost]
     public async Task<IActionResult> Create(
         int initiativeId,
@@ -92,7 +114,13 @@ public class TasksController : ControllerBase
         }
     }
 
-    /// <summary>Updates a task on the Initiative.</summary>
+    /// <summary>
+    /// Updates a task on the Initiative.
+    /// </summary>
+    /// <param name="initiativeId">The Initiative that owns the task.</param>
+    /// <param name="taskId">The task identifier.</param>
+    /// <param name="request">The updated task details.</param>
+    /// <returns>200 OK with the updated task, 404 Not Found when the Initiative or task does not exist, or 400 Bad Request when validation fails.</returns>
     [HttpPut("{taskId:int}")]
     public async Task<IActionResult> Update(
         int initiativeId,
@@ -115,7 +143,12 @@ public class TasksController : ControllerBase
         }
     }
 
-    /// <summary>Deletes a task from the Initiative.</summary>
+    /// <summary>
+    /// Deletes a task from the Initiative.
+    /// </summary>
+    /// <param name="initiativeId">The Initiative that owns the task.</param>
+    /// <param name="taskId">The task identifier.</param>
+    /// <returns>204 No Content when the task is deleted, or 404 Not Found when the Initiative or task does not exist.</returns>
     [HttpDelete("{taskId:int}")]
     public async Task<IActionResult> Remove(int initiativeId, int taskId)
     {

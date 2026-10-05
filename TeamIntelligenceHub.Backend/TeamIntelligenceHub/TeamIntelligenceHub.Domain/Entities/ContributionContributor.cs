@@ -1,12 +1,9 @@
 namespace TeamIntelligenceHub.Domain.Entities;
 
 /// <summary>
-/// Somebody credited on a contribution, and what they did on it.
+/// Somebody credited on a contribution, and what they did on it. It is a table rather than
+/// a JSON list because each row carries a payload and a foreign key to Users.
 /// </summary>
-/// <remarks>
-/// Stays a table rather than a JSON list because each row carries a payload and a foreign
-/// key to Users. "Contributions by person" is what the Team Contributions page reads.
-/// </remarks>
 public class ContributionContributor
 {
     public const int ResponsibilityAreaMaxLength = 255;

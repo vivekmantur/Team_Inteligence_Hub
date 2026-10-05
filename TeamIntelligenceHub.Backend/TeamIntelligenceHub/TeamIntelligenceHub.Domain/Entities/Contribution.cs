@@ -4,15 +4,9 @@ namespace TeamIntelligenceHub.Domain.Entities;
 
 /// <summary>
 /// Something worth capturing against an Initiative: an update, a deliverable, a metric,
-/// a risk, a customer story, or several of those at once.
+/// a risk, a customer story, or several of those at once. Payload-free lists (Types, Tags,
+/// ReuseTargets) are JSON columns; anything with a payload or foreign key stays a table.
 /// </summary>
-/// <remarks>
-/// Deliberately narrow. Three of the wizard's fields are lists with no payload of their
-/// own (Types, Tags, ReuseTargets) and are stored as JSON columns rather than child
-/// tables. Anything that carries a payload, a foreign key, or its own endpoint stays a
-/// table. The conditional sections in step 4 of the wizard are optional 1:1 rows, so a
-/// Progress Update cannot carry a risk severity.
-/// </remarks>
 public class Contribution
 {
     // Single source of truth for field limits, shared with the EF configuration and

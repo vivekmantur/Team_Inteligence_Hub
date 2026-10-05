@@ -2,12 +2,9 @@
 
 /// <summary>
 /// Where a task sits in its lifecycle. Display labels ("Not Started") live in the UI;
-/// these names are the stored and transmitted identifiers.
-/// </summary>
-/// <remarks>
-/// Named InitiativeTaskStatus rather than TaskStatus, which would collide with
+/// these names are the stored and transmitted identifiers. Named to avoid colliding with
 /// System.Threading.Tasks.TaskStatus.
-/// </remarks>
+/// </summary>
 public enum InitiativeTaskStatus
 {
     NotStarted,

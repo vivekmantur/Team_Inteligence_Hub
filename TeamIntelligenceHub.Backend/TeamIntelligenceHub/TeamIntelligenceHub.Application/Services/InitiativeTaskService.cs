@@ -1,4 +1,11 @@
-﻿using TeamIntelligenceHub.Application.DTOs;
+﻿// 1. Get all tasks on an Initiative
+// 2. Get one task by ID
+// 3. Create a task
+// 4. Update a task
+// 5. Create a task from an activity post
+// 6. Delete a task
+
+using TeamIntelligenceHub.Application.DTOs;
 using TeamIntelligenceHub.Application.Exceptions;
 using TeamIntelligenceHub.Application.Interfaces;
 using TeamIntelligenceHub.Application.Interfaces.Repositories;
@@ -25,6 +32,14 @@ public class InitiativeTaskService : IInitiativeTaskService
     private readonly IUserRepository _userRepository;
     private readonly ICurrentUserService _currentUserService;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InitiativeTaskService"/> class.
+    /// </summary>
+    /// <param name="taskRepository">The repository that stores tasks.</param>
+    /// <param name="initiativeRepository">The repository used to confirm the Initiative exists.</param>
+    /// <param name="memberRepository">The repository used to enroll assignees on the team.</param>
+    /// <param name="userRepository">The repository used to resolve the caller and assignees.</param>
+    /// <param name="currentUserService">The service that exposes the signed-in caller's identity.</param>
     public InitiativeTaskService(
         IInitiativeTaskRepository taskRepository,
         IInitiativeRepository initiativeRepository,
@@ -39,6 +54,7 @@ public class InitiativeTaskService : IInitiativeTaskService
         _currentUserService = currentUserService;
     }
 
+    /// <inheritdoc />
     public async Task<List<TaskResponseDto>> GetByInitiativeAsync(int initiativeId)
     {
         await RequireInitiativeAsync(initiativeId);
@@ -50,6 +66,7 @@ public class InitiativeTaskService : IInitiativeTaskService
             .ToList();
     }
 
+    /// <inheritdoc />
     public async Task<TaskResponseDto> GetByIdAsync(int initiativeId, int taskId)
     {
         var task = await RequireTaskAsync(initiativeId, taskId);
@@ -57,6 +74,7 @@ public class InitiativeTaskService : IInitiativeTaskService
         return MapToDto(task);
     }
 
+    /// <inheritdoc />
     public async Task<TaskResponseDto> CreateAsync(
         int initiativeId,
         CreateTaskRequestDto request)
@@ -87,6 +105,7 @@ public class InitiativeTaskService : IInitiativeTaskService
         return MapToDto(created);
     }
 
+    /// <inheritdoc />
     public async Task<TaskResponseDto> UpdateAsync(
         int initiativeId,
         int taskId,
@@ -108,6 +127,7 @@ public class InitiativeTaskService : IInitiativeTaskService
         return MapToDto(task);
     }
 
+    /// <inheritdoc />
     public async Task<TaskResponseDto> CreateFromActivityAsync(
         int initiativeId,
         int activityId,
@@ -137,6 +157,7 @@ public class InitiativeTaskService : IInitiativeTaskService
         return MapToDto(created);
     }
 
+    /// <inheritdoc />
     public async Task RemoveAsync(int initiativeId, int taskId)
     {
         var task = await RequireTaskAsync(initiativeId, taskId);

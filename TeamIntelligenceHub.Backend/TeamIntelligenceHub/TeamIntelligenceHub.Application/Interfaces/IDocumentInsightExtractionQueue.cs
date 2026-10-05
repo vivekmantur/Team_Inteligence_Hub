@@ -2,14 +2,8 @@ namespace TeamIntelligenceHub.Application.Interfaces;
 
 /// <summary>
 /// Hands a Contribution attachment off for asynchronous testimonial/customer-story
-/// extraction.
+/// extraction. Only produces the message; the separate extraction Function consumes it.
 /// </summary>
-/// <remarks>
-/// Declared here so the Application layer can trigger extraction without knowing an Azure
-/// Storage Queue is behind it. The consumer is the standalone
-/// TestimonialAndCustomerStoryExtractionFunction project — this interface only produces
-/// the message; nothing about how it's processed lives in this codebase.
-/// </remarks>
 public interface IDocumentInsightExtractionQueue
 {
     /// <summary>
@@ -17,5 +11,7 @@ public interface IDocumentInsightExtractionQueue
     /// attachment itself from being saved, so implementations are expected to swallow and
     /// log rather than throw.
     /// </summary>
+    /// <param name="contributionAttachmentId">The attachment to extract insights from.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
     Task EnqueueAsync(int contributionAttachmentId, CancellationToken cancellationToken = default);
 }

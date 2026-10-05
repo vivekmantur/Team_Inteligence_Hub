@@ -1,4 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// 1. Get a comment by ID
+// 2. Get the comments for a task
+// 3. Get the replies to a comment
+// 4. Add a comment
+// 5. Update a comment
+// 6. Remove a comment with its replies
+// 7. Replace a comment's mentions
+
+using Microsoft.EntityFrameworkCore;
 using TeamIntelligenceHub.Application.Interfaces.Repositories;
 using TeamIntelligenceHub.Domain.Entities;
 
@@ -12,11 +20,16 @@ public class TaskCommentRepository : ITaskCommentRepository
 {
     private readonly TeamIntelligenceHubDbContext _context;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TaskCommentRepository"/> class.
+    /// </summary>
+    /// <param name="context">The database context used to read and save task comments and their mentions.</param>
     public TaskCommentRepository(TeamIntelligenceHubDbContext context)
     {
         _context = context;
     }
 
+    /// <summary>Builds the comment query with the author, mentions, and attachments included.</summary>
     private IQueryable<TaskComment> WithDetail()
     {
         return _context.TaskComments
@@ -26,11 +39,13 @@ public class TaskCommentRepository : ITaskCommentRepository
             .Include(x => x.Attachments);
     }
 
+    /// <inheritdoc />
     public async Task<TaskComment?> GetByIdAsync(int id)
     {
         return await WithDetail().FirstOrDefaultAsync(x => x.Id == id);
     }
 
+    /// <inheritdoc />
     public async Task<List<TaskComment>> GetByTaskIdAsync(int taskId)
     {
         // Oldest first: a discussion reads top to bottom.
@@ -40,6 +55,7 @@ public class TaskCommentRepository : ITaskCommentRepository
             .ToListAsync();
     }
 
+    /// <inheritdoc />
     public async Task<List<TaskComment>> GetRepliesAsync(int parentCommentId)
     {
         return await _context.TaskComments
@@ -47,6 +63,7 @@ public class TaskCommentRepository : ITaskCommentRepository
             .ToListAsync();
     }
 
+    /// <inheritdoc />
     public async Task<TaskComment> AddAsync(TaskComment comment)
     {
         await _context.TaskComments.AddAsync(comment);
@@ -56,6 +73,7 @@ public class TaskCommentRepository : ITaskCommentRepository
         return comment;
     }
 
+    /// <inheritdoc />
     public async Task UpdateAsync(TaskComment comment)
     {
         _context.TaskComments.Update(comment);
@@ -63,6 +81,7 @@ public class TaskCommentRepository : ITaskCommentRepository
         await _context.SaveChangesAsync();
     }
 
+    /// <inheritdoc />
     public async Task RemoveWithRepliesAsync(TaskComment comment)
     {
         var replies = await _context.TaskComments
@@ -81,6 +100,7 @@ public class TaskCommentRepository : ITaskCommentRepository
         await _context.SaveChangesAsync();
     }
 
+    /// <inheritdoc />
     public async Task ReplaceMentionsAsync(
         int commentId,
         IReadOnlyCollection<int> mentionedUserIds)

@@ -7,12 +7,23 @@ namespace TeamIntelligenceHub.Application.Interfaces.Repositories;
 /// </summary>
 public interface IContributionAttachmentRepository
 {
-    /// <summary>Loads one attachment row, or null when it does not exist.</summary>
+    /// <summary>
+    /// Loads one attachment row.
+    /// </summary>
+    /// <param name="id">The attachment identifier.</param>
+    /// <returns>The attachment row, or null when it does not exist.</returns>
     Task<ContributionAttachment?> GetByIdAsync(int id);
 
-    /// <summary>Inserts a new attachment row and returns it with its generated id.</summary>
+    /// <summary>
+    /// Inserts a new attachment row.
+    /// </summary>
+    /// <param name="attachment">The attachment row to insert.</param>
+    /// <returns>The attachment row with its generated id.</returns>
     Task<ContributionAttachment> AddAsync(ContributionAttachment attachment);
 
-    /// <summary>Deletes the attachment row. The stored file is not touched.</summary>
+    /// <summary>
+    /// Deletes the attachment row. The stored file is not touched.
+    /// </summary>
+    /// <param name="attachment">The attachment row to delete.</param>
     Task RemoveAsync(ContributionAttachment attachment);
 }

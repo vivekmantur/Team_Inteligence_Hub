@@ -4,14 +4,9 @@ namespace TeamIntelligenceHub.Domain.Entities;
 
 /// <summary>
 /// A testimonial or customer story extracted from a Contribution attachment's document
-/// content, rather than typed in by hand through the wizard.
+/// content, rather than typed in by hand through the wizard. It has its own table and key
+/// because one Contribution's attachments can yield several rows.
 /// </summary>
-/// <remarks>
-/// Deliberately its own table rather than a row in ContributionTestimonials or
-/// ContributionCustomerStories: those two share their primary key with Contribution
-/// (at most one row per Contribution), but a Contribution's attachments can easily yield
-/// several extracted rows. Own surrogate key here instead.
-/// </remarks>
 public class DocumentTestimonialAndCustomerStory
 {
     public const int NameMaxLength = 200;

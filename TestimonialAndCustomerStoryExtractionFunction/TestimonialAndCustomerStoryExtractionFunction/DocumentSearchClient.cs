@@ -1,3 +1,5 @@
+// 1. Search the index for chunks near a query, optionally scoped to one attachment's blob
+
 using System.Text;
 using Azure;
 using Azure.Identity;
@@ -14,12 +16,16 @@ namespace TestimonialAndCustomerStoryExtractionFunction;
 /// </summary>
 public class RetrievedChunk
 {
+    /// <summary>Gets or sets the chunk's text.</summary>
     public string Content { get; set; } = null!;
 
+    /// <summary>Gets or sets the title of the source document, if the index has one.</summary>
     public string? Title { get; set; }
 
+    /// <summary>Gets or sets the chunk's source id value from the configured source field.</summary>
     public string? Source { get; set; }
 
+    /// <summary>Gets or sets the search relevance score.</summary>
     public double Score { get; set; }
 }
 
@@ -33,6 +39,11 @@ public class DocumentSearchClient
     private readonly Lazy<SearchClient> _client;
     private readonly ILogger<DocumentSearchClient> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DocumentSearchClient"/> class.
+    /// </summary>
+    /// <param name="options">The Azure AI Search settings used to create the search client and shape queries.</param>
+    /// <param name="logger">The logger used to record searches, results and failures.</param>
     public DocumentSearchClient(
         IOptions<AzureAiSearchOptions> options, ILogger<DocumentSearchClient> logger)
     {
@@ -74,6 +85,10 @@ public class DocumentSearchClient
     private const int ScopedOversampleFactor = 10;
     private const int ScopedOversampleMinimum = 50;
 
+    /// <summary>
+    /// Searches the index for the chunks closest to a query vector, optionally fused with a
+    /// keyword search and restricted to one attachment's blob.
+    /// </summary>
     /// <param name="queryVector">The embedded query to search near.</param>
     /// <param name="searchText">
     /// When supplied, runs a hybrid search — keyword relevance (BM25) fused with vector
@@ -86,6 +101,14 @@ public class DocumentSearchClient
     /// ComputeBlobDocumentKey) and checking it as a prefix, since the stored value
     /// carries an undocumented page-index suffix after the encoded URL.
     /// </param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>
+    /// The matching chunks in relevance order, at most AzureAiSearch:TopNDocuments of them.
+    /// </returns>
+    /// <exception cref="ExtractionException">
+    /// Thrown when Azure AI Search is not configured, a scoped search lacks SourceField or
+    /// SourceUrlPrefix, or the request fails.
+    /// </exception>
     public async Task<IReadOnlyList<RetrievedChunk>> SearchAsync(
         ReadOnlyMemory<float> queryVector,
         string? searchText = null,

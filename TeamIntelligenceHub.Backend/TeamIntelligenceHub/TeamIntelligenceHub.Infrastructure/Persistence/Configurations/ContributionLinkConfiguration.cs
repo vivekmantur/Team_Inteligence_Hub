@@ -5,8 +5,12 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Configures the table, keys, columns, and relationships for the <see cref="ContributionLink"/> entity.
+/// </summary>
 public class ContributionLinkConfiguration : IEntityTypeConfiguration<ContributionLink>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<ContributionLink> builder)
     {
         builder.ToTable("ContributionLinks");

@@ -5,9 +5,13 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Configures the table, keys, columns, and relationships for the <see cref="ContributionAttachment"/> entity.
+/// </summary>
 public class ContributionAttachmentConfiguration
     : IEntityTypeConfiguration<ContributionAttachment>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<ContributionAttachment> builder)
     {
         builder.ToTable("ContributionAttachments");

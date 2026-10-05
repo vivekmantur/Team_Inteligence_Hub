@@ -1,3 +1,16 @@
+// 1. Check that the Azure AD tenant and client IDs are configured
+// 2. Register the CORS policy for the SPA origins
+// 3. Register controllers with enum names in JSON
+// 4. Register the current user service
+// 5. Add Microsoft Entra ID bearer token authentication
+// 6. Log the reason a bearer token is rejected
+// 7. Add authorization
+// 8. Register the infrastructure services
+// 9. Configure Swagger with the OAuth2 PKCE and bearer token schemes
+// 10. Enable Swagger UI in Development, or HTTPS redirection elsewhere
+// 11. Add the CORS, authentication, and authorization middleware
+// 12. Map the controllers and run the app
+
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Identity.Web;

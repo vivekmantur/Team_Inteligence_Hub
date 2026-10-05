@@ -20,18 +20,14 @@ public class RetrievedChunk
 }
 
 /// <summary>
-/// Finds indexed content near a query vector.
+/// Finds indexed content near a query vector, which <see cref="IEmbeddingClient"/>
+/// computes beforehand. How many chunks come back is set by the implementation's configuration.
 /// </summary>
-/// <remarks>
-/// Declared here so the Application layer can ground an answer without knowing Azure AI
-/// Search is behind it. The query vector is computed elsewhere (<see cref="IEmbeddingClient"/>)
-/// and handed in already embedded, so this interface never needs to know which embedding
-/// model produced it. How many chunks come back is a search-tuning concern, so it is left
-/// to the implementation's own configuration rather than passed in here.
-/// </remarks>
 public interface IVectorSearchClient
 {
-    /// <summary>Returns the indexed chunks nearest the query vector.</summary>
+    /// <summary>
+    /// Returns the indexed chunks nearest the query vector.
+    /// </summary>
     /// <param name="queryVector">The embedded query to search near.</param>
     /// <param name="searchText">
     /// When supplied, the implementation runs a hybrid search — keyword relevance (BM25)
@@ -43,6 +39,11 @@ public interface IVectorSearchClient
     /// instead of the whole index. What "restrict" means concretely (which index field to
     /// filter on) is an implementation detail the caller does not need to know.
     /// </param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>The nearest chunks, most relevant first.</returns>
+    /// <exception cref="TeamIntelligenceHub.Application.Exceptions.CopilotException">
+    /// Thrown when the search call fails.
+    /// </exception>
     Task<IReadOnlyList<RetrievedChunk>> SearchAsync(
         ReadOnlyMemory<float> queryVector,
         string? searchText = null,

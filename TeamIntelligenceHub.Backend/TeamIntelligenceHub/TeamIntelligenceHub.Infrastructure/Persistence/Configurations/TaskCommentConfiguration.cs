@@ -5,8 +5,12 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Configures the table, keys, columns, and relationships for the <see cref="TaskComment"/> entity.
+/// </summary>
 public class TaskCommentConfiguration : IEntityTypeConfiguration<TaskComment>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<TaskComment> builder)
     {
         builder.ToTable("TaskComments");

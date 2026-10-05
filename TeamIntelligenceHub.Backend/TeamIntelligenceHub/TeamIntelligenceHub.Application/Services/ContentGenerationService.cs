@@ -1,3 +1,5 @@
+// 1. Generate Content Studio output for an Initiative
+
 using TeamIntelligenceHub.Application.DTOs;
 using TeamIntelligenceHub.Application.Exceptions;
 using TeamIntelligenceHub.Application.Interfaces;
@@ -11,19 +13,20 @@ namespace TeamIntelligenceHub.Application.Services;
 /// <summary>
 /// Loads an Initiative's structured data, builds the format-specific prompt, and asks
 /// the chat model, through IChatCompletionClient, for one piece of Content Studio output.
+/// Every format uses structured data only; this service never retrieves attachments.
 /// </summary>
-/// <remarks>
-/// Structured data only, for every format, Blog and CaseStudy included. The service has
-/// no IVectorSearchClient or IEmbeddingClient dependency, so nothing here can retrieve an
-/// attachment. Initiative-scoped document retrieval for Blog/CaseStudy is a separate
-/// feature outside this service.
-/// </remarks>
 public class ContentGenerationService : IContentGenerationService
 {
     private readonly IInitiativeRepository _initiativeRepository;
     private readonly IContributionRepository _contributionRepository;
     private readonly IChatCompletionClient _chatClient;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ContentGenerationService"/> class.
+    /// </summary>
+    /// <param name="initiativeRepository">The repository that loads the Initiative.</param>
+    /// <param name="contributionRepository">The repository that loads the Initiative's contributions.</param>
+    /// <param name="chatClient">The chat model client that writes the content.</param>
     public ContentGenerationService(
         IInitiativeRepository initiativeRepository,
         IContributionRepository contributionRepository,
@@ -34,6 +37,7 @@ public class ContentGenerationService : IContentGenerationService
         _chatClient = chatClient;
     }
 
+    /// <inheritdoc />
     public async Task<ContentGenerationResponseDto> GenerateAsync(
         int initiativeId,
         ContentGenerationRequestDto request,

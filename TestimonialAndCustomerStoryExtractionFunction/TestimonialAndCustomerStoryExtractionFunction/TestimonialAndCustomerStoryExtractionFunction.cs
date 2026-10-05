@@ -1,3 +1,5 @@
+// 1. Run extraction for the attachment named in a queue message
+
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -13,6 +15,11 @@ public class TestimonialAndCustomerStoryExtractionFunction
     private readonly TestimonialAndCustomerStoryExtractor _extractor;
     private readonly ILogger<TestimonialAndCustomerStoryExtractionFunction> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TestimonialAndCustomerStoryExtractionFunction"/> class.
+    /// </summary>
+    /// <param name="extractor">The extractor that finds and saves testimonials and customer stories.</param>
+    /// <param name="logger">The logger used to record skipped messages.</param>
     public TestimonialAndCustomerStoryExtractionFunction(
         TestimonialAndCustomerStoryExtractor extractor,
         ILogger<TestimonialAndCustomerStoryExtractionFunction> logger)
@@ -21,6 +28,12 @@ public class TestimonialAndCustomerStoryExtractionFunction
         _logger = logger;
     }
 
+    /// <summary>
+    /// Parses the attachment ID from the queue message and runs extraction for it. Logs and
+    /// drops a message that is not a valid ID.
+    /// </summary>
+    /// <param name="message">The queue message, holding the ContributionAttachmentId as plain text.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
     [Function(nameof(TestimonialAndCustomerStoryExtractionFunction))]
     public async Task Run(
         [QueueTrigger("testimonial-customer-story-extraction", Connection = "StorageConnection")]

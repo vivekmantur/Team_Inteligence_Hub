@@ -1,4 +1,9 @@
-﻿using TeamIntelligenceHub.Application.DTOs;
+﻿// 1. Get one user by ID
+// 2. Get all users
+// 3. Get or create the signed-in caller's user row
+// 4. Set the caller's own AppRole
+
+using TeamIntelligenceHub.Application.DTOs;
 using TeamIntelligenceHub.Application.Exceptions;
 using TeamIntelligenceHub.Application.Interfaces;
 using TeamIntelligenceHub.Application.Interfaces.Repositories;
@@ -17,6 +22,12 @@ public class UserService : IUserService
     private readonly IInitiativeMemberRepository _memberRepository;
     private readonly ICurrentUserService _currentUserService;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UserService"/> class.
+    /// </summary>
+    /// <param name="userRepository">The repository that stores user rows.</param>
+    /// <param name="memberRepository">The repository used to total each user's allocation.</param>
+    /// <param name="currentUserService">The service that exposes the signed-in caller's identity.</param>
     public UserService(
         IUserRepository userRepository,
         IInitiativeMemberRepository memberRepository,
@@ -27,6 +38,7 @@ public class UserService : IUserService
         _currentUserService = currentUserService;
     }
 
+    /// <inheritdoc />
     public async Task<UserResponseDto?> GetByIdAsync(int id)
     {
         var user = await _userRepository.GetByIdAsync(id);
@@ -39,6 +51,7 @@ public class UserService : IUserService
         return MapToDto(user, await GetTotalAllocationAsync(id));
     }
 
+    /// <inheritdoc />
     public async Task<List<UserResponseDto>> GetAllAsync()
     {
         var users = await _userRepository.GetAllAsync();
@@ -51,6 +64,7 @@ public class UserService : IUserService
             .ToList();
     }
 
+    /// <inheritdoc />
     public async Task<UserResponseDto> GetCurrentUserAsync()
     {
         if (!_currentUserService.IsAuthenticated)
@@ -141,6 +155,7 @@ public class UserService : IUserService
         return MapToDto(user, await GetTotalAllocationAsync(user.Id));
     }
 
+    /// <inheritdoc />
     public async Task<UserResponseDto> UpdateAppRoleAsync(int userId, UpdateAppRoleRequestDto request)
     {
         var entraObjectId = _currentUserService.EntraObjectId;
@@ -168,6 +183,7 @@ public class UserService : IUserService
         return MapToDto(caller, await GetTotalAllocationAsync(caller.Id));
     }
 
+    /// <summary>Returns one user's allocation summed across every Initiative.</summary>
     private async Task<decimal> GetTotalAllocationAsync(int userId)
     {
         var totals = await _memberRepository.GetTotalAllocationByUserIdsAsync([userId]);

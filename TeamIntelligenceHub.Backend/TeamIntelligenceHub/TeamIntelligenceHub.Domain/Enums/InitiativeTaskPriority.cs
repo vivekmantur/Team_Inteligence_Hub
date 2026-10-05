@@ -1,12 +1,9 @@
 ﻿namespace TeamIntelligenceHub.Domain.Enums;
 
 /// <summary>
-/// How urgent a task is. Ordered high to low.
+/// How urgent a task is. Ordered high to low. Kept separate from
+/// <see cref="InitiativePriority"/> so the two can diverge.
 /// </summary>
-/// <remarks>
-/// Deliberately separate from <see cref="InitiativePriority"/>. They share values, but
-/// they are different concepts and should be free to diverge.
-/// </remarks>
 public enum InitiativeTaskPriority
 {
     High,

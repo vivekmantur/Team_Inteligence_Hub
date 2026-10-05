@@ -4,11 +4,8 @@ namespace TeamIntelligenceHub.Domain.Entities;
 
 /// <summary>
 /// A quote from a stakeholder or customer. Present only when the contribution is a
-/// Testimonial.
+/// Testimonial. It shares its primary key with Contribution.
 /// </summary>
-/// <remarks>
-/// Shared primary key with Contribution, like the other conditional detail tables.
-/// </remarks>
 public class ContributionTestimonial
 {
     public const int QuoteMaxLength = 2000;

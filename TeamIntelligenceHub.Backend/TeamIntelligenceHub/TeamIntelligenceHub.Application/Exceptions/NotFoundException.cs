@@ -6,6 +6,10 @@
 /// </summary>
 public class NotFoundException : Exception
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NotFoundException"/> class.
+    /// </summary>
+    /// <param name="message">A description of the record that was not found.</param>
     public NotFoundException(string message)
         : base(message)
     {

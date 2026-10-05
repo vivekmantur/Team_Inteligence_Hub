@@ -1,3 +1,6 @@
+// 1. Add an extracted testimonial or customer story
+// 2. Get the extracted rows of one type from submitted contributions
+
 using Microsoft.EntityFrameworkCore;
 using TeamIntelligenceHub.Application.Interfaces.Repositories;
 using TeamIntelligenceHub.Domain.Entities;
@@ -14,11 +17,16 @@ public class DocumentTestimonialAndCustomerStoryRepository
 {
     private readonly TeamIntelligenceHubDbContext _context;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DocumentTestimonialAndCustomerStoryRepository"/> class.
+    /// </summary>
+    /// <param name="context">The database context used to read and save extracted testimonial and customer story rows.</param>
     public DocumentTestimonialAndCustomerStoryRepository(TeamIntelligenceHubDbContext context)
     {
         _context = context;
     }
 
+    /// <inheritdoc />
     public async Task<DocumentTestimonialAndCustomerStory> AddAsync(
         DocumentTestimonialAndCustomerStory row)
     {
@@ -29,6 +37,7 @@ public class DocumentTestimonialAndCustomerStoryRepository
         return row;
     }
 
+    /// <inheritdoc />
     public async Task<List<DocumentTestimonialAndCustomerStory>> GetByTypeAsync(
         DocumentInsightType type)
     {

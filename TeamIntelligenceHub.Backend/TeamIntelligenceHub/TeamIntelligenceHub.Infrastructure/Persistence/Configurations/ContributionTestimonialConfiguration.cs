@@ -4,9 +4,13 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Configures the table, keys, columns, and relationships for the <see cref="ContributionTestimonial"/> entity.
+/// </summary>
 public class ContributionTestimonialConfiguration
     : IEntityTypeConfiguration<ContributionTestimonial>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<ContributionTestimonial> builder)
     {
         builder.ToTable("ContributionTestimonials");

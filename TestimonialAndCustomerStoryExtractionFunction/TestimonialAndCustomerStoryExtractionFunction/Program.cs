@@ -1,3 +1,10 @@
+// 1. Create the Functions application builder with ASP.NET Core integration
+// 2. Register ExtractionDbContext against the shared SQL Server database
+// 3. Bind the Azure OpenAI and Azure AI Search options
+// 4. Register the embedding, search and chat clients as singletons
+// 5. Register the extractor as a scoped service
+// 6. Build and run the host
+
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

@@ -1,5 +1,16 @@
+// 1. Parse a customer story reply
+// 2. Parse a testimonial reply
+
 namespace TestimonialAndCustomerStoryExtractionFunction;
 
+/// <summary>
+/// The customer story fields parsed from the model's reply.
+/// </summary>
+/// <param name="CustomerName">The external customer or account name.</param>
+/// <param name="Summary">A short summary of the story.</param>
+/// <param name="Outcome">The headline result.</param>
+/// <param name="Quote">A direct quote from the customer.</param>
+/// <param name="BusinessValue">The business value or impact.</param>
 public sealed record ExtractedCustomerStory(
     string? CustomerName,
     string? Summary,
@@ -7,6 +18,14 @@ public sealed record ExtractedCustomerStory(
     string? Quote,
     string? BusinessValue);
 
+/// <summary>
+/// The testimonial fields parsed from the model's reply.
+/// </summary>
+/// <param name="Quote">The quote, in the speaker's own words.</param>
+/// <param name="SpeakerName">The speaker's name.</param>
+/// <param name="SpeakerRole">The speaker's role or title.</param>
+/// <param name="Audience">The audience group the speaker belongs to.</param>
+/// <param name="Sentiment">The tone of the feedback.</param>
 public sealed record ExtractedTestimonial(
     string Quote,
     string? SpeakerName,
@@ -21,6 +40,13 @@ public sealed record ExtractedTestimonial(
 /// </summary>
 public static class ExtractionResultParser
 {
+    /// <summary>
+    /// Parses a customer story reply into its fields.
+    /// </summary>
+    /// <param name="modelResponse">The model's raw reply to the customer story prompt.</param>
+    /// <returns>
+    /// The parsed customer story, or null when the model found none or every field is empty.
+    /// </returns>
     public static ExtractedCustomerStory? ParseCustomerStory(string modelResponse)
     {
         if (IsNoInsightFound(modelResponse))
@@ -52,6 +78,13 @@ public static class ExtractionResultParser
         return isEmpty ? null : extracted;
     }
 
+    /// <summary>
+    /// Parses a testimonial reply into its fields.
+    /// </summary>
+    /// <param name="modelResponse">The model's raw reply to the testimonial prompt.</param>
+    /// <returns>
+    /// The parsed testimonial, or null when the model found none or the reply has no quote.
+    /// </returns>
     public static ExtractedTestimonial? ParseTestimonial(string modelResponse)
     {
         if (IsNoInsightFound(modelResponse))
@@ -81,6 +114,7 @@ public static class ExtractionResultParser
             ExtractionPromptBuilder.NoInsightFoundMarker,
             StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>Splits the reply into LABEL: value pairs, keyed case-insensitively.</summary>
     private static Dictionary<string, string> ParseLabeledLines(string response)
     {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -106,6 +140,7 @@ public static class ExtractionResultParser
         return result;
     }
 
+    /// <summary>Returns the trimmed value for a label, or null when it is missing, blank or NONE.</summary>
     private static string? GetOrNull(Dictionary<string, string> fields, string key)
     {
         if (!fields.TryGetValue(key, out var value))

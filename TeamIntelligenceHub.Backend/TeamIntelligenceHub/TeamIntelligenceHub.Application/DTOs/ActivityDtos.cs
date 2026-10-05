@@ -4,12 +4,9 @@ using TeamIntelligenceHub.Domain.Entities;
 namespace TeamIntelligenceHub.Application.DTOs;
 
 /// <summary>
-/// Payload for posting to an Initiative's activity feed.
+/// Payload for posting to an Initiative's activity feed. The Initiative comes from the
+/// route and the author from the bearer token; mentions arrive as resolved user ids.
 /// </summary>
-/// <remarks>
-/// The Initiative comes from the route and the author from the bearer token. Mentions
-/// arrive as user ids because the client already resolved each "@name" in its picker.
-/// </remarks>
 public class CreateActivityRequestDto
 {
     [Required(ErrorMessage = "An update is required.")]

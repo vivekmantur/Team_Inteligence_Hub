@@ -1,21 +1,21 @@
+// 1. Build the customer story extraction prompt for a chunk
+// 2. Build the testimonial extraction prompt for a chunk
+
 namespace TestimonialAndCustomerStoryExtractionFunction;
 
 /// <summary>
 /// The system and user prompt for one extraction attempt against one retrieved chunk.
 /// </summary>
+/// <param name="SystemPrompt">The instructions that define what to extract and the reply format.</param>
+/// <param name="UserPrompt">The user message holding the chunk content under "Source material".</param>
 public sealed record ExtractionPrompt(string SystemPrompt, string UserPrompt);
 
 /// <summary>
 /// Builds the two extraction prompts (customer story, testimonial) used to ask the model
 /// whether one retrieved document chunk actually contains a genuine instance of either
-/// shape, and if so, to pull out its fields.
+/// shape, and if so, to pull out its fields. Chunk content is untrusted, so it is rendered
+/// as data to analyze, never as instructions.
 /// </summary>
-/// <remarks>
-/// Pure and static — no I/O. The chunk content is untrusted document text, so it is
-/// rendered under "Source material" the same way the main backend's ContentPromptBuilder
-/// and CopilotService already treat retrieved content: data to analyze, never
-/// instructions.
-/// </remarks>
 public static class ExtractionPromptBuilder
 {
     /// <summary>Longest a chunk may appear in the prompt before being cut off.</summary>
@@ -80,9 +80,19 @@ public static class ExtractionPromptBuilder
         "quote is meant for.>\n" +
         "SENTIMENT: <one of Positive, Neutral, Constructive, or NONE>";
 
+    /// <summary>
+    /// Builds the prompt that asks the model whether a chunk contains a genuine customer story.
+    /// </summary>
+    /// <param name="chunkContent">The retrieved chunk text, truncated to <see cref="MaxChunkLength"/> characters.</param>
+    /// <returns>The customer story system prompt paired with the chunk as the user prompt.</returns>
     public static ExtractionPrompt BuildCustomerStoryPrompt(string chunkContent) =>
         new(CustomerStorySystemPrompt, BuildUserPrompt(chunkContent));
 
+    /// <summary>
+    /// Builds the prompt that asks the model whether a chunk contains a genuine testimonial.
+    /// </summary>
+    /// <param name="chunkContent">The retrieved chunk text, truncated to <see cref="MaxChunkLength"/> characters.</param>
+    /// <returns>The testimonial system prompt paired with the chunk as the user prompt.</returns>
     public static ExtractionPrompt BuildTestimonialPrompt(string chunkContent) =>
         new(TestimonialSystemPrompt, BuildUserPrompt(chunkContent));
 

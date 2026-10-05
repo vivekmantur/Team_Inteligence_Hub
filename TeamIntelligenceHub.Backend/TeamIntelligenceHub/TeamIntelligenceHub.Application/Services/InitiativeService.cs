@@ -1,4 +1,12 @@
-﻿using TeamIntelligenceHub.Application.DTOs;
+﻿// 1. Get one Initiative by ID
+// 2. Get all Initiatives
+// 3. Create an Initiative
+// 4. Update an Initiative
+// 5. Get what deleting an Initiative would remove
+// 6. Delete an Initiative with its stored files
+// 7. Get the Insights readiness aggregates
+
+using TeamIntelligenceHub.Application.DTOs;
 using TeamIntelligenceHub.Application.Exceptions;
 using TeamIntelligenceHub.Application.Interfaces;
 using TeamIntelligenceHub.Application.Interfaces.Repositories;
@@ -20,6 +28,14 @@ public class InitiativeService : IInitiativeService
     private readonly ICurrentUserService _currentUserService;
     private readonly IFileStorage _fileStorage;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InitiativeService"/> class.
+    /// </summary>
+    /// <param name="initiativeRepository">The repository that stores Initiatives.</param>
+    /// <param name="contributionRepository">The repository used to find contribution files to delete.</param>
+    /// <param name="userRepository">The repository used to resolve the caller, owner, and sponsor.</param>
+    /// <param name="currentUserService">The service that exposes the signed-in caller's identity.</param>
+    /// <param name="fileStorage">The store that contribution files are removed from.</param>
     public InitiativeService(
         IInitiativeRepository initiativeRepository,
         IContributionRepository contributionRepository,
@@ -34,6 +50,7 @@ public class InitiativeService : IInitiativeService
         _fileStorage = fileStorage;
     }
 
+    /// <inheritdoc />
     public async Task<InitiativeResponseDto?> GetByIdAsync(int id)
     {
         var initiative = await _initiativeRepository.GetByIdAsync(id);
@@ -43,6 +60,7 @@ public class InitiativeService : IInitiativeService
             : MapToDto(initiative);
     }
 
+    /// <inheritdoc />
     public async Task<List<InitiativeResponseDto>> GetAllAsync()
     {
         var initiatives = await _initiativeRepository.GetAllAsync();
@@ -52,6 +70,7 @@ public class InitiativeService : IInitiativeService
             .ToList();
     }
 
+    /// <inheritdoc />
     public async Task<InitiativeResponseDto> CreateAsync(
         CreateInitiativeRequestDto request)
     {
@@ -173,11 +192,12 @@ public class InitiativeService : IInitiativeService
         return MapToDto(created);
     }
 
-    /// <summary>
+    /// <inheritdoc />
+    /// <remarks>
     /// Open to any signed-in user: there is no per-Initiative ownership gate, by the
     /// "open access" decision for this feature. Any tighter access control should apply
     /// consistently across every Initiative-scoped write, not just this one.
-    /// </summary>
+    /// </remarks>
     public async Task<InitiativeResponseDto> UpdateAsync(
         int id, UpdateInitiativeRequestDto request)
     {
@@ -286,6 +306,7 @@ public class InitiativeService : IInitiativeService
         return await ReloadAsync(id);
     }
 
+    /// <inheritdoc />
     public async Task<InitiativeDeletionImpactDto> GetDeletionImpactAsync(int id)
     {
         await RequireInitiativeAsync(id);
@@ -302,12 +323,11 @@ public class InitiativeService : IInitiativeService
         };
     }
 
-    /// <summary>
-    /// Deletes the Initiative and everything under it. Contributions, InitiativeTasks,
-    /// Activities, and InitiativeMembers all cascade in the database, so nothing further
-    /// is needed for those.
-    /// </summary>
+    /// <inheritdoc />
     /// <remarks>
+    /// Contributions, InitiativeTasks, Activities, and InitiativeMembers all cascade in
+    /// the database, so nothing further is needed for those.
+    ///
     /// Known limitation: the matching chunks are not removed from the search index, so
     /// deleted attachments' content remains searchable. IVectorSearchClient exposes no
     /// delete operation, and the index's document-key scheme is configured outside this
@@ -336,6 +356,7 @@ public class InitiativeService : IInitiativeService
         await _initiativeRepository.RemoveAsync(initiative);
     }
 
+    /// <inheritdoc />
     public async Task<ReadinessInsightsDto> GetReadinessInsightsAsync()
     {
         var initiatives = await _initiativeRepository.GetForReadinessInsightsAsync();
@@ -387,6 +408,7 @@ public class InitiativeService : IInitiativeService
             ?? throw new NotFoundException($"Initiative {id} does not exist.");
     }
 
+    /// <summary>Reloads the Initiative so its Owner and Executive Sponsor are current.</summary>
     private async Task<InitiativeResponseDto> ReloadAsync(int id)
     {
         return MapToDto(await RequireInitiativeAsync(id));

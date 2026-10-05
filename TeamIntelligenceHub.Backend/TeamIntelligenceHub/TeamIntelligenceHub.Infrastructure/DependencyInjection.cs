@@ -1,4 +1,16 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// 1. Register the SQL Server database context
+// 2. Register the user and initiative repositories and services
+// 3. Register the initiative member and task repositories and services
+// 4. Register the task comment and comment attachment repositories and services
+// 5. Register the activity, contribution, and contribution attachment repositories and services
+// 6. Register the content generation service
+// 7. Bind the blob storage options and register file storage
+// 8. Register the document insight extraction queue
+// 9. Bind the Azure OpenAI and Azure AI Search options
+// 10. Register the embedding, vector search, and chat clients and the Copilot service
+// 11. Register the document testimonial and customer story repository
+
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TeamIntelligenceHub.Application.Interfaces.Repositories;
@@ -18,6 +30,13 @@ namespace TeamIntelligenceHub.Infrastructure;
 /// </summary>
 public static class DependencyInjection
 {
+    /// <summary>
+    /// Registers the Infrastructure layer's database context, repositories, application services,
+    /// file storage, extraction queue, and Azure AI clients.
+    /// </summary>
+    /// <param name="services">The service collection to add the registrations to.</param>
+    /// <param name="configuration">The application configuration that supplies the connection string and option sections.</param>
+    /// <returns>The same service collection, so further calls can be chained.</returns>
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
         IConfiguration configuration)

@@ -1,3 +1,14 @@
+// 1. Load the attachment, and stop if it no longer exists
+// 2. Skip any insight type already extracted for the attachment
+// 3. Find the best customer story chunk in the attachment's indexed content
+// 4. Ask the model whether the chunk holds a genuine customer story
+// 5. Parse the customer story reply
+// 6. Save the customer story
+// 7. Find the best testimonial chunk in the attachment's indexed content
+// 8. Ask the model whether the chunk holds a genuine testimonial
+// 9. Parse the testimonial reply
+// 10. Save the testimonial
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -5,12 +16,8 @@ namespace TestimonialAndCustomerStoryExtractionFunction;
 
 /// <summary>
 /// Looks for a genuine testimonial and/or customer story in one Contribution attachment's
-/// indexed content, and persists whatever is found.
+/// indexed content, and persists whatever is found. It shares no code with the main backend.
 /// </summary>
-/// <remarks>
-/// Fully self-contained: the extraction workflow, the data access, and the AI clients are
-/// all local to this Function project — nothing is shared with the main backend.
-/// </remarks>
 public class TestimonialAndCustomerStoryExtractor
 {
     private const string CustomerStoryQueryText =
@@ -27,6 +34,14 @@ public class TestimonialAndCustomerStoryExtractor
     private readonly ChatCompletionClient _chatClient;
     private readonly ILogger<TestimonialAndCustomerStoryExtractor> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TestimonialAndCustomerStoryExtractor"/> class.
+    /// </summary>
+    /// <param name="dbContext">The database context used to load attachments and save extracted insights.</param>
+    /// <param name="embeddingClient">The client that embeds the search query text.</param>
+    /// <param name="searchClient">The client that finds the best-matching chunk in the attachment.</param>
+    /// <param name="chatClient">The client that asks the model to extract the insight.</param>
+    /// <param name="logger">The logger used to record each extraction step.</param>
     public TestimonialAndCustomerStoryExtractor(
         ExtractionDbContext dbContext,
         EmbeddingClient embeddingClient,
@@ -41,6 +56,12 @@ public class TestimonialAndCustomerStoryExtractor
         _logger = logger;
     }
 
+    /// <summary>
+    /// Extracts at most one customer story and one testimonial from an attachment's indexed
+    /// content and saves what is found, skipping any type already extracted for it.
+    /// </summary>
+    /// <param name="contributionAttachmentId">The ID of the attachment to extract from.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
     public async Task ExtractAsync(
         int contributionAttachmentId, CancellationToken cancellationToken = default)
     {
@@ -87,6 +108,7 @@ public class TestimonialAndCustomerStoryExtractor
             attachment.Id, foundCustomerStory, foundTestimonial);
     }
 
+    /// <summary>Logs that a type was already extracted and returns true so it counts as found.</summary>
     private bool LogAlreadyExtracted(int attachmentId, DocumentInsightType type)
     {
         _logger.LogInformation(
@@ -96,6 +118,7 @@ public class TestimonialAndCustomerStoryExtractor
         return true;
     }
 
+    /// <summary>Finds, extracts and saves a customer story; returns whether one was saved.</summary>
     private async Task<bool> ExtractCustomerStoryAsync(
         ContributionAttachmentRecord attachment, CancellationToken cancellationToken)
     {
@@ -143,6 +166,7 @@ public class TestimonialAndCustomerStoryExtractor
         return true;
     }
 
+    /// <summary>Finds, extracts and saves a testimonial; returns whether one was saved.</summary>
     private async Task<bool> ExtractTestimonialAsync(
         ContributionAttachmentRecord attachment, CancellationToken cancellationToken)
     {

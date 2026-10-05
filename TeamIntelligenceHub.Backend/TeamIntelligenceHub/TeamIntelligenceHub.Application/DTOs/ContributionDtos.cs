@@ -10,13 +10,8 @@ namespace TeamIntelligenceHub.Application.DTOs;
 
 /// <summary>
 /// Payload for creating a contribution. Carries the whole graph, because the wizard
-/// submits all eight of its steps at once.
+/// submits all eight of its steps at once; files are uploaded separately afterwards.
 /// </summary>
-/// <remarks>
-/// The Initiative comes from the route and the submitter from the bearer token, so
-/// neither can be spoofed by the body. Attachments are not here: a file needs a
-/// ContributionId to hang off, so it is uploaded after this call returns.
-/// </remarks>
 public class CreateContributionRequestDto
 {
     [Required(ErrorMessage = "Title is required.")]
@@ -82,13 +77,9 @@ public class CreateContributionRequestDto
 }
 
 /// <summary>
-/// Payload for editing a contribution. Replaces the whole graph, matching the wizard,
-/// which reopens every step rather than patching one field.
+/// Payload for editing a contribution. Replaces the whole graph, matching the wizard;
+/// attachments are managed through their own endpoints.
 /// </summary>
-/// <remarks>
-/// Attachments are excluded and managed through their own endpoints, the same split
-/// task comments use.
-/// </remarks>
 public class UpdateContributionRequestDto : CreateContributionRequestDto
 {
 }

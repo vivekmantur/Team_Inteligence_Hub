@@ -1,3 +1,5 @@
+// 1. Send a system and user prompt and return the model's reply
+
 using Azure;
 using Azure.AI.OpenAI;
 using Azure.Identity;
@@ -17,6 +19,11 @@ public class ChatCompletionClient
     private readonly Lazy<OpenAI.Chat.ChatClient> _client;
     private readonly ILogger<ChatCompletionClient> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ChatCompletionClient"/> class.
+    /// </summary>
+    /// <param name="options">The Azure OpenAI settings used to create the chat client.</param>
+    /// <param name="logger">The logger used to record requests, replies and failures.</param>
     public ChatCompletionClient(
         IOptions<AzureOpenAiOptions> options, ILogger<ChatCompletionClient> logger)
     {
@@ -49,6 +56,16 @@ public class ChatCompletionClient
         return azureClient.GetChatClient(_options.ChatDeploymentName);
     }
 
+    /// <summary>
+    /// Sends a system prompt and a user prompt to the chat model and returns the text of its reply.
+    /// </summary>
+    /// <param name="systemPrompt">The instructions that set the model's task and output format.</param>
+    /// <param name="userPrompt">The user message, holding the content to analyze.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>The text of the first reply content part, or an empty string when there is none.</returns>
+    /// <exception cref="ExtractionException">
+    /// Thrown when Azure OpenAI is not configured or the request fails.
+    /// </exception>
     public async Task<string> CompleteAsync(
         string systemPrompt,
         string userPrompt,

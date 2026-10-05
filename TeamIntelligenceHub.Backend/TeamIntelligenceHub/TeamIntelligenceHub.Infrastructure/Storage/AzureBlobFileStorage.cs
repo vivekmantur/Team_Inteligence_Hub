@@ -1,3 +1,7 @@
+// 1. Upload a file to a storage area
+// 2. Download a stored file
+// 3. Delete a stored file
+
 using System.Collections.Concurrent;
 using Azure;
 using Azure.Identity;
@@ -25,6 +29,11 @@ public class AzureBlobFileStorage : IFileStorage
     private readonly ConcurrentDictionary<FileStorageArea, Lazy<BlobContainerClient>>
         _containers = new();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AzureBlobFileStorage"/> class.
+    /// </summary>
+    /// <param name="options">The blob storage settings that name the account and containers.</param>
+    /// <param name="logger">The logger that records uploads and storage failures.</param>
     public AzureBlobFileStorage(
         IOptions<BlobStorageOptions> options,
         ILogger<AzureBlobFileStorage> logger)
@@ -54,6 +63,7 @@ public class AzureBlobFileStorage : IFileStorage
                 LazyThreadSafetyMode.PublicationOnly)).Value;
     }
 
+    /// <summary>Creates the client for a container and creates the container as private when it does not exist yet.</summary>
     private BlobContainerClient CreateContainerClient(string containerName)
     {
         if (!_options.IsConfigured)
@@ -92,6 +102,7 @@ public class AzureBlobFileStorage : IFileStorage
         }
     }
 
+    /// <inheritdoc />
     public async Task<string> UploadAsync(
         FileStorageArea area,
         Stream content,
@@ -173,6 +184,7 @@ public class AzureBlobFileStorage : IFileStorage
             : sanitized;
     }
 
+    /// <inheritdoc />
     public async Task<Stream> DownloadAsync(
         FileStorageArea area,
         string blobName,
@@ -196,6 +208,7 @@ public class AzureBlobFileStorage : IFileStorage
         }
     }
 
+    /// <inheritdoc />
     public async Task DeleteAsync(
         FileStorageArea area,
         string blobName,

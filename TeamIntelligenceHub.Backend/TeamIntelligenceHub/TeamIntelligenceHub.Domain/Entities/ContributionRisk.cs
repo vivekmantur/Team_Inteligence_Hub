@@ -3,15 +3,9 @@ using TeamIntelligenceHub.Domain.Enums;
 namespace TeamIntelligenceHub.Domain.Entities;
 
 /// <summary>
-/// Something that needs attention. Present only when the contribution is a Risk.
+/// Something that needs attention. Present only when the contribution is a Risk. The owner
+/// is a real user, so "risks I own" is a query rather than a string match.
 /// </summary>
-/// <remarks>
-/// Shared primary key with Contribution, so the row cannot outlive it.
-///
-/// The owner is a real user rather than a typed-in name, which turns "risks I own" into
-/// a query instead of a string match. Nullable so an unassigned risk can still be
-/// recorded.
-/// </remarks>
 public class ContributionRisk
 {
     public const int DescriptionMaxLength = 2000;

@@ -5,12 +5,9 @@ using TeamIntelligenceHub.Domain.Enums;
 namespace TeamIntelligenceHub.Application.DTOs;
 
 /// <summary>
-/// Payload for creating a task.
+/// Payload for creating a task. The Initiative comes from the route and the creator
+/// from the bearer token, so neither can be set by the body.
 /// </summary>
-/// <remarks>
-/// The Initiative comes from the route and the creator from the bearer token, so neither
-/// can be spoofed by the body.
-/// </remarks>
 public class CreateTaskRequestDto
 {
     [Required(ErrorMessage = "Task title is required.")]

@@ -1,3 +1,5 @@
+// 1. Generate an embedding vector for a piece of text
+
 using Azure;
 using Azure.AI.OpenAI;
 using Azure.Identity;
@@ -17,6 +19,11 @@ public class EmbeddingClient
     private readonly Lazy<OpenAI.Embeddings.EmbeddingClient> _client;
     private readonly ILogger<EmbeddingClient> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EmbeddingClient"/> class.
+    /// </summary>
+    /// <param name="options">The Azure OpenAI settings used to create the embedding client.</param>
+    /// <param name="logger">The logger used to record requests, responses and failures.</param>
     public EmbeddingClient(IOptions<AzureOpenAiOptions> options, ILogger<EmbeddingClient> logger)
     {
         _options = options.Value;
@@ -48,6 +55,15 @@ public class EmbeddingClient
         return azureClient.GetEmbeddingClient(_options.EmbeddingDeploymentName);
     }
 
+    /// <summary>
+    /// Generates an embedding vector for the given text with the configured embedding model.
+    /// </summary>
+    /// <param name="text">The text to embed.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>The embedding vector for the text.</returns>
+    /// <exception cref="ExtractionException">
+    /// Thrown when Azure OpenAI is not configured or the request fails.
+    /// </exception>
     public async Task<ReadOnlyMemory<float>> EmbedAsync(
         string text,
         CancellationToken cancellationToken = default)

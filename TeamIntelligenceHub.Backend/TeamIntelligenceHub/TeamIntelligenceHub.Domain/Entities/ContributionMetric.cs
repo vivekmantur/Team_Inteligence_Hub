@@ -2,15 +2,8 @@ namespace TeamIntelligenceHub.Domain.Entities;
 
 /// <summary>
 /// A measurable business result. Present only when the contribution is a Business Metric.
+/// It shares its primary key with Contribution, so there is at most one per contribution.
 /// </summary>
-/// <remarks>
-/// ContributionId is both the primary key and the foreign key, a shared primary key. That
-/// makes the 1:1 real: the row cannot exist without its contribution, and there cannot be
-/// two of them.
-///
-/// Previous and current are decimal rather than free text, so Analytics can compute the
-/// delta instead of only displaying it.
-/// </remarks>
 public class ContributionMetric
 {
     public const int MetricNameMaxLength = 150;

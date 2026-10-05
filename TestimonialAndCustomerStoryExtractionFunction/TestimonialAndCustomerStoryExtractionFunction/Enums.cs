@@ -8,7 +8,10 @@ namespace TestimonialAndCustomerStoryExtractionFunction;
 /// </summary>
 public enum DocumentInsightType
 {
+    /// <summary>A customer story with a problem, solution and outcome.</summary>
     CustomerStory,
+
+    /// <summary>A direct quote from a customer or stakeholder.</summary>
     Testimonial
 }
 
@@ -18,9 +21,16 @@ public enum DocumentInsightType
 /// </summary>
 public enum TestimonialAudience
 {
+    /// <summary>Company leadership.</summary>
     Leadership,
+
+    /// <summary>A project or business stakeholder.</summary>
     Stakeholder,
+
+    /// <summary>An external customer.</summary>
     Customer,
+
+    /// <summary>A member of an internal team.</summary>
     Team
 }
 
@@ -30,7 +40,12 @@ public enum TestimonialAudience
 /// </summary>
 public enum TestimonialSentiment
 {
+    /// <summary>Favorable feedback.</summary>
     Positive,
+
+    /// <summary>Neither favorable nor critical feedback.</summary>
     Neutral,
+
+    /// <summary>Critical feedback offered to help improve.</summary>
     Constructive
 }

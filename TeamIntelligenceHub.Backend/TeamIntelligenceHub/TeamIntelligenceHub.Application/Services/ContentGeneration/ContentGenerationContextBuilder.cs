@@ -1,3 +1,5 @@
+// 1. Build the generation context for a content format
+
 using TeamIntelligenceHub.Domain.Entities;
 using TeamIntelligenceHub.Domain.Enums;
 
@@ -5,20 +7,21 @@ namespace TeamIntelligenceHub.Application.Services.ContentGeneration;
 
 /// <summary>
 /// Translates an Initiative's already-loaded, already-Initiative-scoped Contribution list
-/// into the narrow context each format's generation rule calls for.
+/// into the narrow context each format's generation rule calls for. It is the only part
+/// of this feature that touches EF entities.
 /// </summary>
-/// <remarks>
-/// The only place in this feature that touches Initiative/Contribution EF entities;
-/// prompt construction and the model call see only ContentGenerationContext. Per-type
-/// filtering (Newsletter, Blog) runs in memory rather than as a Types.Contains(...) SQL
-/// query, because Types is a JSON column with no proven translation in this codebase.
-/// </remarks>
 public static class ContentGenerationContextBuilder
 {
     /// <summary>
-    /// Returns the context the given format's rule calls for. Throws
-    /// ArgumentOutOfRangeException for an unsupported format.
+    /// Returns the context the given format's rule calls for.
     /// </summary>
+    /// <param name="format">The content format being generated.</param>
+    /// <param name="initiative">The Initiative the content is about.</param>
+    /// <param name="contributions">The Initiative's contributions, already loaded.</param>
+    /// <returns>The context holding only the fields that format uses.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown for an unsupported format.
+    /// </exception>
     public static ContentGenerationContext Build(
         ContentFormat format, Initiative initiative, IReadOnlyList<Contribution> contributions)
     {

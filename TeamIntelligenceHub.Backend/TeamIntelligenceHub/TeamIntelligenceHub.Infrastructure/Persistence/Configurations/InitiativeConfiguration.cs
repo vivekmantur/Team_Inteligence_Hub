@@ -5,8 +5,12 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Configures the table, keys, columns, and relationships for the <see cref="Initiative"/> entity.
+/// </summary>
 public class InitiativeConfiguration : IEntityTypeConfiguration<Initiative>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Initiative> builder)
     {
         builder.ToTable("Initiatives");

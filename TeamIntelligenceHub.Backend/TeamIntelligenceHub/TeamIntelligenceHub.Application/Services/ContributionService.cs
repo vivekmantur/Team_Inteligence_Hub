@@ -1,4 +1,15 @@
-﻿using TeamIntelligenceHub.Application.DTOs;
+﻿// 1. Get all contributions on an Initiative
+// 2. Get one contribution by ID
+// 3. Create a contribution
+// 4. Update a contribution
+// 5. Delete a contribution with its stored files
+// 6. Get submitted Customer Story cards
+// 7. Get submitted Testimonial cards
+// 8. Get document-extracted customer story cards
+// 9. Get document-extracted testimonial cards
+// 10. Get the tag vocabulary for typeahead
+
+using TeamIntelligenceHub.Application.DTOs;
 using TeamIntelligenceHub.Application.Exceptions;
 using TeamIntelligenceHub.Application.Interfaces;
 using TeamIntelligenceHub.Application.Interfaces.Repositories;
@@ -20,7 +31,10 @@ public class ContributionService : IContributionService
     /// </summary>
     private const string DefaultContributorRole = "Contributor";
 
+    /// <summary>How many tags the typeahead returns when the caller does not say.</summary>
     private const int DefaultTagVocabularyTake = 20;
+
+    /// <summary>The most tags the typeahead returns in one call.</summary>
     private const int MaxTagVocabularyTake = 100;
 
     private readonly IContributionRepository _contributionRepository;
@@ -31,6 +45,16 @@ public class ContributionService : IContributionService
     private readonly IFileStorage _fileStorage;
     private readonly IDocumentTestimonialAndCustomerStoryRepository _documentInsightRepository;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ContributionService"/> class.
+    /// </summary>
+    /// <param name="contributionRepository">The repository that stores contributions and their graph.</param>
+    /// <param name="initiativeRepository">The repository used to confirm the Initiative exists.</param>
+    /// <param name="memberRepository">The repository used to enroll credited people on the team.</param>
+    /// <param name="userRepository">The repository used to resolve the caller and credited people.</param>
+    /// <param name="currentUserService">The service that exposes the signed-in caller's identity.</param>
+    /// <param name="fileStorage">The store that attachment files are removed from on delete.</param>
+    /// <param name="documentInsightRepository">The repository that loads document-extracted stories and testimonials.</param>
     public ContributionService(
         IContributionRepository contributionRepository,
         IInitiativeRepository initiativeRepository,
@@ -49,6 +73,7 @@ public class ContributionService : IContributionService
         _documentInsightRepository = documentInsightRepository;
     }
 
+    /// <inheritdoc />
     public async Task<List<ContributionResponseDto>> GetByInitiativeAsync(int initiativeId)
     {
         await RequireInitiativeAsync(initiativeId);
@@ -59,11 +84,13 @@ public class ContributionService : IContributionService
         return contributions.Select(MapToDto).ToList();
     }
 
+    /// <inheritdoc />
     public async Task<ContributionResponseDto> GetByIdAsync(int contributionId)
     {
         return MapToDto(await RequireContributionAsync(contributionId));
     }
 
+    /// <inheritdoc />
     public async Task<ContributionResponseDto> CreateAsync(
         int initiativeId,
         CreateContributionRequestDto request)
@@ -103,6 +130,7 @@ public class ContributionService : IContributionService
         return await ReloadAsync(created.Id);
     }
 
+    /// <inheritdoc />
     public async Task<ContributionResponseDto> UpdateAsync(
         int contributionId,
         UpdateContributionRequestDto request)
@@ -148,6 +176,7 @@ public class ContributionService : IContributionService
         return await ReloadAsync(contribution.Id);
     }
 
+    /// <inheritdoc />
     public async Task RemoveAsync(
         int contributionId,
         CancellationToken cancellationToken = default)
@@ -174,6 +203,7 @@ public class ContributionService : IContributionService
         await _contributionRepository.RemoveAsync(contribution);
     }
 
+    /// <inheritdoc />
     public async Task<List<CustomerStoryCardDto>> GetCustomerStoriesAsync()
     {
         var contributions = await _contributionRepository.GetCustomerStoriesAsync();
@@ -181,6 +211,7 @@ public class ContributionService : IContributionService
         return contributions.Select(MapToCustomerStoryCard).ToList();
     }
 
+    /// <inheritdoc />
     public async Task<List<TestimonialCardDto>> GetTestimonialsAsync()
     {
         var contributions = await _contributionRepository.GetTestimonialsAsync();
@@ -188,6 +219,7 @@ public class ContributionService : IContributionService
         return contributions.Select(MapToTestimonialCard).ToList();
     }
 
+    /// <inheritdoc />
     public async Task<List<DocumentCustomerStoryCardDto>> GetDocumentCustomerStoriesAsync()
     {
         var rows = await _documentInsightRepository.GetByTypeAsync(
@@ -196,6 +228,7 @@ public class ContributionService : IContributionService
         return rows.Select(MapToDocumentCustomerStoryCard).ToList();
     }
 
+    /// <inheritdoc />
     public async Task<List<DocumentTestimonialCardDto>> GetDocumentTestimonialsAsync()
     {
         var rows = await _documentInsightRepository.GetByTypeAsync(
@@ -204,6 +237,7 @@ public class ContributionService : IContributionService
         return rows.Select(MapToDocumentTestimonialCard).ToList();
     }
 
+    /// <inheritdoc />
     public async Task<List<string>> GetTagVocabularyAsync(string? search, int? take)
     {
         var limit = Math.Clamp(
@@ -350,6 +384,7 @@ public class ContributionService : IContributionService
         };
     }
 
+    /// <summary>Builds the risk section, rejecting an owner who does not exist.</summary>
     private async Task<ContributionRisk?> BuildRiskAsync(
         int contributionId,
         ContributionRiskRequestDto? request)
@@ -563,6 +598,7 @@ public class ContributionService : IContributionService
         return result;
     }
 
+    /// <summary>Trims the URL and rejects anything that is not an absolute http or https link within the length limit.</summary>
     private static string RequireUrl(string? url)
     {
         var value = url?.Trim();
@@ -623,6 +659,7 @@ public class ContributionService : IContributionService
                 $"Contribution {contributionId} does not exist.");
     }
 
+    /// <summary>Resolves the signed-in caller to their local user row.</summary>
     private async Task<User> GetCallerAsync()
     {
         var entraObjectId = _currentUserService.EntraObjectId;
@@ -637,6 +674,7 @@ public class ContributionService : IContributionService
                 "Your profile has not been created yet. Reload the app and try again.");
     }
 
+    /// <summary>Reloads the contribution so its whole graph is populated.</summary>
     private async Task<ContributionResponseDto> ReloadAsync(int contributionId)
     {
         return MapToDto(await RequireContributionAsync(contributionId));

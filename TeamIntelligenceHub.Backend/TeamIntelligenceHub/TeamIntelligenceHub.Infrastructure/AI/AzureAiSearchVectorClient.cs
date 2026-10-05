@@ -1,3 +1,5 @@
+// 1. Search the index for the chunks closest to a query vector
+
 using Azure;
 using Azure.Identity;
 using Azure.Search.Documents;
@@ -17,12 +19,17 @@ public class AzureAiSearchVectorClient : IVectorSearchClient
     private readonly AzureAiSearchOptions _options;
     private readonly Lazy<SearchClient> _client;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AzureAiSearchVectorClient"/> class.
+    /// </summary>
+    /// <param name="options">The Azure AI Search settings that name the endpoint, index, and fields to query.</param>
     public AzureAiSearchVectorClient(IOptions<AzureAiSearchOptions> options)
     {
         _options = options.Value;
         _client = new Lazy<SearchClient>(CreateClient);
     }
 
+    /// <summary>Creates the search client, using the API key when one is set and a managed identity otherwise.</summary>
     private SearchClient CreateClient()
     {
         if (!_options.IsConfigured)
@@ -41,6 +48,7 @@ public class AzureAiSearchVectorClient : IVectorSearchClient
                 endpoint, _options.IndexName, new AzureKeyCredential(_options.ApiKey));
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<RetrievedChunk>> SearchAsync(
         ReadOnlyMemory<float> queryVector,
         string? searchText = null,

@@ -1,4 +1,8 @@
-﻿using TeamIntelligenceHub.Application.DTOs;
+﻿// 1. Upload a file to a task comment
+// 2. Download a task comment attachment
+// 3. Delete a task comment attachment
+
+using TeamIntelligenceHub.Application.DTOs;
 using TeamIntelligenceHub.Application.Exceptions;
 using TeamIntelligenceHub.Application.Interfaces;
 using TeamIntelligenceHub.Application.Interfaces.Repositories;
@@ -30,6 +34,14 @@ public class TaskCommentAttachmentService : ITaskCommentAttachmentService
     private readonly ICurrentUserService _currentUserService;
     private readonly IFileStorage _fileStorage;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TaskCommentAttachmentService"/> class.
+    /// </summary>
+    /// <param name="attachmentRepository">The repository that stores attachment rows.</param>
+    /// <param name="commentRepository">The repository used to load the owning comment.</param>
+    /// <param name="userRepository">The repository used to resolve the caller.</param>
+    /// <param name="currentUserService">The service that exposes the signed-in caller's identity.</param>
+    /// <param name="fileStorage">The store that holds the file bytes.</param>
     public TaskCommentAttachmentService(
         ITaskCommentAttachmentRepository attachmentRepository,
         ITaskCommentRepository commentRepository,
@@ -44,6 +56,7 @@ public class TaskCommentAttachmentService : ITaskCommentAttachmentService
         _fileStorage = fileStorage;
     }
 
+    /// <inheritdoc />
     public async Task<TaskCommentAttachmentDto> UploadAsync(
         int taskId,
         int commentId,
@@ -107,6 +120,7 @@ public class TaskCommentAttachmentService : ITaskCommentAttachmentService
         }
     }
 
+    /// <inheritdoc />
     public async Task<FileDownload> DownloadAsync(
         int taskId,
         int attachmentId,
@@ -120,6 +134,7 @@ public class TaskCommentAttachmentService : ITaskCommentAttachmentService
         return new FileDownload(content, attachment.FileName, attachment.ContentType);
     }
 
+    /// <inheritdoc />
     public async Task RemoveAsync(
         int taskId,
         int attachmentId,
@@ -145,6 +160,7 @@ public class TaskCommentAttachmentService : ITaskCommentAttachmentService
             FileStorageArea.TaskAttachments, attachment.BlobName, cancellationToken);
     }
 
+    /// <summary>Loads a comment and confirms it belongs to the task in the route.</summary>
     private async Task<TaskComment> RequireCommentAsync(int taskId, int commentId)
     {
         var comment = await _commentRepository.GetByIdAsync(commentId)
@@ -159,6 +175,7 @@ public class TaskCommentAttachmentService : ITaskCommentAttachmentService
         return comment;
     }
 
+    /// <summary>Loads an attachment and confirms its comment belongs to the task in the route.</summary>
     private async Task<TaskCommentAttachment> RequireAttachmentAsync(
         int taskId,
         int attachmentId)
@@ -175,6 +192,7 @@ public class TaskCommentAttachmentService : ITaskCommentAttachmentService
         return attachment;
     }
 
+    /// <summary>Resolves the signed-in caller to their local user row.</summary>
     private async Task<User> GetCallerAsync()
     {
         var entraObjectId = _currentUserService.EntraObjectId;
@@ -189,6 +207,7 @@ public class TaskCommentAttachmentService : ITaskCommentAttachmentService
                 "Your profile has not been created yet. Reload the app and try again.");
     }
 
+    /// <summary>Reduces the name to its leaf and rejects blank, overlong, or blocked names.</summary>
     private static string ValidateFileName(string? fileName)
     {
         if (string.IsNullOrWhiteSpace(fileName))

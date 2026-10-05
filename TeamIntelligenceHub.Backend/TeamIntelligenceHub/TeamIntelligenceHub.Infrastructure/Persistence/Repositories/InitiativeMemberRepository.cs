@@ -1,4 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// 1. Get an initiative member by ID
+// 2. Get the members of an initiative
+// 3. Get each user's total allocation across initiatives
+// 4. Check whether a user is already a member of an initiative
+// 5. Add an initiative member
+// 6. Update an initiative member
+// 7. Remove an initiative member
+
+using Microsoft.EntityFrameworkCore;
 using TeamIntelligenceHub.Application.Interfaces.Repositories;
 using TeamIntelligenceHub.Domain.Entities;
 
@@ -12,11 +20,16 @@ public class InitiativeMemberRepository : IInitiativeMemberRepository
 {
     private readonly TeamIntelligenceHubDbContext _context;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InitiativeMemberRepository"/> class.
+    /// </summary>
+    /// <param name="context">The database context used to read and save initiative members.</param>
     public InitiativeMemberRepository(TeamIntelligenceHubDbContext context)
     {
         _context = context;
     }
 
+    /// <inheritdoc />
     public async Task<InitiativeMember?> GetByIdAsync(int id)
     {
         return await _context.InitiativeMembers
@@ -24,6 +37,7 @@ public class InitiativeMemberRepository : IInitiativeMemberRepository
             .FirstOrDefaultAsync(x => x.Id == id);
     }
 
+    /// <inheritdoc />
     public async Task<List<InitiativeMember>> GetByInitiativeIdAsync(int initiativeId)
     {
         return await _context.InitiativeMembers
@@ -33,6 +47,7 @@ public class InitiativeMemberRepository : IInitiativeMemberRepository
             .ToListAsync();
     }
 
+    /// <inheritdoc />
     public async Task<Dictionary<int, decimal>> GetTotalAllocationByUserIdsAsync(
         IReadOnlyCollection<int> userIds)
     {
@@ -46,12 +61,14 @@ public class InitiativeMemberRepository : IInitiativeMemberRepository
             .ToDictionaryAsync(x => x.UserId, x => x.Total);
     }
 
+    /// <inheritdoc />
     public async Task<bool> ExistsAsync(int initiativeId, int userId)
     {
         return await _context.InitiativeMembers
             .AnyAsync(x => x.InitiativeId == initiativeId && x.UserId == userId);
     }
 
+    /// <inheritdoc />
     public async Task<InitiativeMember> AddAsync(InitiativeMember member)
     {
         await _context.InitiativeMembers.AddAsync(member);
@@ -66,6 +83,7 @@ public class InitiativeMemberRepository : IInitiativeMemberRepository
         return member;
     }
 
+    /// <inheritdoc />
     public async Task UpdateAsync(InitiativeMember member)
     {
         _context.InitiativeMembers.Update(member);
@@ -73,6 +91,7 @@ public class InitiativeMemberRepository : IInitiativeMemberRepository
         await _context.SaveChangesAsync();
     }
 
+    /// <inheritdoc />
     public async Task RemoveAsync(InitiativeMember member)
     {
         _context.InitiativeMembers.Remove(member);

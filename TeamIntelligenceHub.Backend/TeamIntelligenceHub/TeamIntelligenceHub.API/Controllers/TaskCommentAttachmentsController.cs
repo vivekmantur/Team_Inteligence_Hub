@@ -1,3 +1,7 @@
+// 1. Upload a file to a task comment
+// 2. Download a task comment attachment
+// 3. Delete a task comment attachment
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TeamIntelligenceHub.Application.Exceptions;
@@ -7,12 +11,9 @@ using TeamIntelligenceHub.Domain.Entities;
 namespace TeamIntelligenceHub.API.Controllers;
 
 /// <summary>
-/// Files attached to comments on a task.
+/// Handles the files attached to comments on a task. The API streams files to private
+/// storage, so every read goes through an authenticated endpoint.
 /// </summary>
-/// <remarks>
-/// The browser posts the file here and the API streams it to file storage, so storage
-/// stays private and every read goes through an authenticated endpoint.
-/// </remarks>
 [ApiController]
 [Authorize]
 [Route("api/tasks/{taskId:int}")]
@@ -24,6 +25,11 @@ public class TaskCommentAttachmentsController : ControllerBase
     private readonly ITaskCommentAttachmentService _attachmentService;
     private readonly ILogger<TaskCommentAttachmentsController> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TaskCommentAttachmentsController"/> class.
+    /// </summary>
+    /// <param name="attachmentService">The service that stores, reads, and deletes comment attachments.</param>
+    /// <param name="logger">The logger used to record rejected files and storage failures.</param>
     public TaskCommentAttachmentsController(
         ITaskCommentAttachmentService attachmentService,
         ILogger<TaskCommentAttachmentsController> logger)
@@ -32,7 +38,14 @@ public class TaskCommentAttachmentsController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>Uploads one file against a comment.</summary>
+    /// <summary>
+    /// Uploads one file against a comment on the task.
+    /// </summary>
+    /// <param name="taskId">The task that owns the comment.</param>
+    /// <param name="commentId">The comment the file is attached to.</param>
+    /// <param name="file">The uploaded file.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>200 OK with the new attachment, 400 Bad Request when no file is sent or validation fails, 404 Not Found when the task or comment does not exist, or 502 Bad Gateway when file storage is unavailable.</returns>
     [HttpPost("comments/{commentId:int}/attachments")]
     [RequestSizeLimit(TaskCommentAttachment.MaxFileSizeBytes + MultipartOverheadBytes)]
     public async Task<IActionResult> Upload(
@@ -81,7 +94,13 @@ public class TaskCommentAttachmentsController : ControllerBase
         }
     }
 
-    /// <summary>Streams a stored file back through the API.</summary>
+    /// <summary>
+    /// Streams a stored comment attachment back through the API.
+    /// </summary>
+    /// <param name="taskId">The task that owns the attachment.</param>
+    /// <param name="attachmentId">The attachment identifier.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>200 OK with the file content, content type, and file name, 404 Not Found when the task or attachment does not exist, or 502 Bad Gateway when file storage is unavailable.</returns>
     [HttpGet("attachments/{attachmentId:int}/download")]
     public async Task<IActionResult> Download(
         int taskId,
@@ -110,7 +129,13 @@ public class TaskCommentAttachmentsController : ControllerBase
         }
     }
 
-    /// <summary>Deletes an attachment from one of the task's comments.</summary>
+    /// <summary>
+    /// Deletes an attachment from one of the task's comments.
+    /// </summary>
+    /// <param name="taskId">The task that owns the attachment.</param>
+    /// <param name="attachmentId">The attachment identifier.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>204 No Content when the attachment is deleted, 404 Not Found when the task or attachment does not exist, or 400 Bad Request when validation fails.</returns>
     [HttpDelete("attachments/{attachmentId:int}")]
     public async Task<IActionResult> Remove(
         int taskId,

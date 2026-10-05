@@ -1,14 +1,9 @@
 namespace TeamIntelligenceHub.Application.Interfaces;
 
 /// <summary>
-/// Which body of files an operation concerns.
+/// Which body of files an operation concerns. Infrastructure maps each area to its own
+/// container, because access control and search indexing are scoped per container.
 /// </summary>
-/// <remarks>
-/// Named in domain terms so the Application layer stays storage-agnostic; Infrastructure
-/// maps each area to its own container. Separate containers rather than folders, because
-/// access control and search indexing are both scoped per container: contribution
-/// evidence grounds Copilot, task comment chatter does not.
-/// </remarks>
 public enum FileStorageArea
 {
     /// <summary>Files attached to comments on a task.</summary>
@@ -19,13 +14,9 @@ public enum FileStorageArea
 }
 
 /// <summary>
-/// Somewhere to put the bytes of an uploaded file.
+/// Somewhere to put the bytes of an uploaded file, without the Application layer knowing
+/// which storage provider is behind it.
 /// </summary>
-/// <remarks>
-/// Declared here so the Application layer can store and fetch files without knowing that
-/// Azure Blob Storage is behind it. Swapping to local disk, S3, or a managed identity
-/// instead of a connection string touches only the Infrastructure implementation.
-/// </remarks>
 public interface IFileStorage
 {
     /// <summary>
@@ -37,6 +28,14 @@ public interface IFileStorage
     /// "tasks/3/comments/7". The leaf name is still generated, so an uploaded name can
     /// never traverse or collide.
     /// </param>
+    /// <param name="content">The file bytes to store.</param>
+    /// <param name="fileName">The original file name, served back on download.</param>
+    /// <param name="contentType">The MIME type stored with the file.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>The key the file was stored under.</returns>
+    /// <exception cref="TeamIntelligenceHub.Application.Exceptions.FileStorageException">
+    /// Thrown when the file store rejects the upload.
+    /// </exception>
     Task<string> UploadAsync(
         FileStorageArea area,
         Stream content,
@@ -45,7 +44,16 @@ public interface IFileStorage
         string? prefix = null,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Opens the stored file for reading.</summary>
+    /// <summary>
+    /// Opens the stored file for reading.
+    /// </summary>
+    /// <param name="area">Which body of files the file belongs to.</param>
+    /// <param name="blobName">The key returned when the file was uploaded.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A readable stream of the file's bytes.</returns>
+    /// <exception cref="TeamIntelligenceHub.Application.Exceptions.FileStorageException">
+    /// Thrown when the file store cannot read the file.
+    /// </exception>
     Task<Stream> DownloadAsync(
         FileStorageArea area,
         string blobName,
@@ -55,6 +63,9 @@ public interface IFileStorage
     /// Removes the stored file. Succeeds silently when it is already gone, so cleanup
     /// after a partial failure is safe to retry.
     /// </summary>
+    /// <param name="area">Which body of files the file belongs to.</param>
+    /// <param name="blobName">The key returned when the file was uploaded.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
     Task DeleteAsync(
         FileStorageArea area,
         string blobName,

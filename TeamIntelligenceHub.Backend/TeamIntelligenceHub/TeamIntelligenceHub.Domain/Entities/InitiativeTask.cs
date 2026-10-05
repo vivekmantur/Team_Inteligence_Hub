@@ -3,12 +3,9 @@
 namespace TeamIntelligenceHub.Domain.Entities;
 
 /// <summary>
-/// A unit of work on an Initiative.
+/// A unit of work on an Initiative, stored in the "Tasks" table. Named InitiativeTask so
+/// it does not collide with System.Threading.Tasks.Task.
 /// </summary>
-/// <remarks>
-/// Maps to the "Tasks" table. The C# type is named InitiativeTask because "Task" would
-/// collide with System.Threading.Tasks.Task throughout an async codebase.
-/// </remarks>
 public class InitiativeTask
 {
     // Single source of truth for field limits, shared with the EF configuration and

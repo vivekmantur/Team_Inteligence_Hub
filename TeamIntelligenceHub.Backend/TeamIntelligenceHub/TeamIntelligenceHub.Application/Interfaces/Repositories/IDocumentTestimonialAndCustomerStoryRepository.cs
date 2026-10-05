@@ -9,7 +9,11 @@ namespace TeamIntelligenceHub.Application.Interfaces.Repositories;
 /// </summary>
 public interface IDocumentTestimonialAndCustomerStoryRepository
 {
-    /// <summary>Inserts one extracted row and returns it with its generated id.</summary>
+    /// <summary>
+    /// Inserts one extracted row.
+    /// </summary>
+    /// <param name="row">The extracted row to insert.</param>
+    /// <returns>The row with its generated id.</returns>
     Task<DocumentTestimonialAndCustomerStory> AddAsync(
         DocumentTestimonialAndCustomerStory row);
 
@@ -18,5 +22,7 @@ public interface IDocumentTestimonialAndCustomerStoryRepository
     /// actually submitted. Includes the source attachment, its Contribution, and that
     /// Contribution's Initiative, so the caller can build a card without further queries.
     /// </summary>
+    /// <param name="type">The insight type to load.</param>
+    /// <returns>The extracted rows of that type.</returns>
     Task<List<DocumentTestimonialAndCustomerStory>> GetByTypeAsync(DocumentInsightType type);
 }
