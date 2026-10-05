@@ -2,6 +2,7 @@
 
 namespace TeamIntelligenceHub.Application.DTOs;
 
+/// <summary>One Initiative, with its Owner and Executive Sponsor display names.</summary>
 public class InitiativeResponseDto
 {
     public int Id { get; set; }

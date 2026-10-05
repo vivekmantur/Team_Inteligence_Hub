@@ -4,8 +4,12 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Configures the table, keys, columns, and relationships for the <see cref="User"/> entity.
+/// </summary>
 public class UserConfiguration : IEntityTypeConfiguration<User>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<User> builder)
     {
         builder.ToTable("Users");
@@ -28,6 +32,11 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(x => x.DisplayName)
             .HasMaxLength(User.DisplayNameMaxLength)
+            .IsRequired();
+
+        builder.Property(x => x.AppRole)
+            .HasMaxLength(User.AppRoleMaxLength)
+            .HasDefaultValue(User.DefaultAppRole)
             .IsRequired();
 
         builder.Property(x => x.IsActive)

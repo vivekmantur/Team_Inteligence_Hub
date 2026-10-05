@@ -1,5 +1,9 @@
 import { QueryClient } from "@tanstack/react-query";
 
+/**
+ * The app's shared React Query client. Queries stay fresh for 5 minutes, unused cache
+ * entries are dropped after 10, and neither queries nor mutations retry on failure.
+ */
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

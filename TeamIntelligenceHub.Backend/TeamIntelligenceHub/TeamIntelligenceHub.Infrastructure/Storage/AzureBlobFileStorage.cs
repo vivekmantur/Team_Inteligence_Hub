@@ -1,3 +1,7 @@
+// 1. Upload a file to a storage area
+// 2. Download a stored file
+// 3. Delete a stored file
+
 using System.Collections.Concurrent;
 using Azure;
 using Azure.Identity;
@@ -25,6 +29,11 @@ public class AzureBlobFileStorage : IFileStorage
     private readonly ConcurrentDictionary<FileStorageArea, Lazy<BlobContainerClient>>
         _containers = new();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AzureBlobFileStorage"/> class.
+    /// </summary>
+    /// <param name="options">The blob storage settings that name the account and containers.</param>
+    /// <param name="logger">The logger that records uploads and storage failures.</param>
     public AzureBlobFileStorage(
         IOptions<BlobStorageOptions> options,
         ILogger<AzureBlobFileStorage> logger)
@@ -37,7 +46,7 @@ public class AzureBlobFileStorage : IFileStorage
     /// Resolves the client for an area, creating the container on first use.
     /// </summary>
     /// <remarks>
-    /// Lazy so the API still starts when storage is unconfigured — only attachment
+    /// Lazy so the API still starts when storage is unconfigured; only attachment
     /// endpoints fail, and they say what is missing.
     ///
     /// PublicationOnly matters: the default mode caches the exception, so one bad
@@ -54,6 +63,7 @@ public class AzureBlobFileStorage : IFileStorage
                 LazyThreadSafetyMode.PublicationOnly)).Value;
     }
 
+    /// <summary>Creates the client for a container and creates the container as private when it does not exist yet.</summary>
     private BlobContainerClient CreateContainerClient(string containerName)
     {
         if (!_options.IsConfigured)
@@ -73,7 +83,7 @@ public class AzureBlobFileStorage : IFileStorage
 
             var container = serviceClient.GetBlobContainerClient(containerName);
 
-            // Private by default — attachments are read back through the API, which
+            // Private by default: attachments are read back through the API, which
             // checks the caller first. A public container would make files guessable.
             container.CreateIfNotExists(PublicAccessType.None);
 
@@ -92,6 +102,7 @@ public class AzureBlobFileStorage : IFileStorage
         }
     }
 
+    /// <inheritdoc />
     public async Task<string> UploadAsync(
         FileStorageArea area,
         Stream content,
@@ -104,7 +115,7 @@ public class AzureBlobFileStorage : IFileStorage
         // attacker-supplied name could otherwise traverse the container or overwrite
         // someone else's file. A sanitized slug of the original name is appended after
         // the GUID purely so the blob's own name stays readable downstream (e.g. in
-        // Azure AI Search citations, which index metadata_storage_name) — it plays no
+        // Azure AI Search citations, which index metadata_storage_name); it plays no
         // role in uniqueness or path safety, both of which the GUID alone guarantees.
         //
         // Separators are written literally rather than through a date format string,
@@ -154,6 +165,9 @@ public class AzureBlobFileStorage : IFileStorage
         }
     }
 
+    /// <summary>Longest filename slug kept in a blob name.</summary>
+    private const int MaxBlobNameSlugLength = 80;
+
     /// <summary>
     /// Keeps only characters safe in a blob name segment, so the result can never
     /// introduce a path separator or other traversal-relevant character regardless of
@@ -165,9 +179,12 @@ public class AzureBlobFileStorage : IFileStorage
         var sanitized = new string(
             name.Where(c => char.IsLetterOrDigit(c) || c is '-' or '_').ToArray());
 
-        return sanitized.Length > 80 ? sanitized[..80] : sanitized;
+        return sanitized.Length > MaxBlobNameSlugLength
+            ? sanitized[..MaxBlobNameSlugLength]
+            : sanitized;
     }
 
+    /// <inheritdoc />
     public async Task<Stream> DownloadAsync(
         FileStorageArea area,
         string blobName,
@@ -191,6 +208,7 @@ public class AzureBlobFileStorage : IFileStorage
         }
     }
 
+    /// <inheritdoc />
     public async Task DeleteAsync(
         FileStorageArea area,
         string blobName,

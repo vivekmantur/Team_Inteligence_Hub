@@ -37,6 +37,7 @@ function formatNum(n: number, mode: "number" | "compact") {
   return n.toLocaleString();
 }
 
+/** Metric tile that counts up to `value`, with an icon badge and an optional up/down trend percentage. */
 export function KpiCard({ label, value, suffix, trend, icon, accent, format = "number" }: KpiCardProps) {
   const v = useCountUp(value);
   const up = (trend ?? 0) >= 0;

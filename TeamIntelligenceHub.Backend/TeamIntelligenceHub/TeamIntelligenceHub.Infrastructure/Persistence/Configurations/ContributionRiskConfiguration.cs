@@ -4,8 +4,12 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Configures the table, keys, columns, and relationships for the <see cref="ContributionRisk"/> entity.
+/// </summary>
 public class ContributionRiskConfiguration : IEntityTypeConfiguration<ContributionRisk>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<ContributionRisk> builder)
     {
         builder.ToTable("ContributionRisks");

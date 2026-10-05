@@ -28,6 +28,8 @@ export interface InitiativeTeamMember {
   roleOther?: string;
   responsibilityArea?: string;
   allocation?: number;
+  /** This person's Allocation summed across every Initiative they belong to, not just this one. */
+  totalAllocationAcrossInitiatives?: number;
   avatarColor: string;
   addedAt: string;
 }
@@ -205,8 +207,14 @@ const InitiativeContext = createContext<InitiativeContextValue | null>(null);
  * Provider
  * ============================================================================ */
 
+/**
+ * Hard-coded placeholders, not the signed-in user. CURRENT_USER is the actor on every
+ * activity entry and notification, and both values drive the UI permission checks below
+ * (isInitiativeOwner, canManageTeam, canEditTask, canDeleteTask). While IS_ADMIN is true,
+ * canManageTeam, canEditTask and canDeleteTask always return true.
+ */
 const CURRENT_USER = "Nihar Pulluri";
-const IS_ADMIN = true; // simulate: current user is an admin for this environment
+const IS_ADMIN = true; // placeholder: grants admin rights to everyone
 
 function uid(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-4)}`;
@@ -215,6 +223,7 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+/** Holds in-memory Initiative state (created Initiatives, teams, tasks, comments, activity, notifications) and permission helpers. */
 export function InitiativeProvider({ children }: PropsWithChildren) {
   const [createdInitiatives, setCreatedInitiatives] = useState<CreatedInitiative[]>([]);
   const [teamByInitiative, setTeamByInitiative] = useState<Record<string, InitiativeTeamMember[]>>({});
@@ -783,14 +792,17 @@ export function InitiativeProvider({ children }: PropsWithChildren) {
   return <InitiativeContext.Provider value={value}>{children}</InitiativeContext.Provider>;
 }
 
+/** Reads the Initiative context; throws when used outside `InitiativeProvider`. */
 export function useInitiatives() {
   const ctx = useContext(InitiativeContext);
   if (!ctx) throw new Error("useInitiatives must be used within InitiativeProvider");
   return ctx;
 }
 
+/** The hard-coded placeholder user name (see CURRENT_USER above). */
 export const CURRENT_USER_NAME = CURRENT_USER;
 
+/** Every `InitiativeRole`, in display order for role pickers. */
 export const INITIATIVE_ROLES: InitiativeRole[] = [
   "Owner",
   "Contributor",

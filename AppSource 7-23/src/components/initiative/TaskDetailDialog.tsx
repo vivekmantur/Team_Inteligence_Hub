@@ -79,6 +79,7 @@ const priorityTone: Record<TaskPriority, string> = {
   Low: "bg-emerald-500/10 text-emerald-700",
 };
 
+/** Dialog for viewing and editing one task, with its comment thread, replies, and file attachments. */
 export function TaskDetailDialog({ open, onOpenChange, task, onRequestDelete }: Props) {
   const {
     canEditTask,
@@ -213,7 +214,7 @@ export function TaskDetailDialog({ open, onOpenChange, task, onRequestDelete }: 
     if (title.trim().length < 3) return;
 
     // Description is intentionally absent: the Tasks table has no column for it, so
-    // sending it would be silently dropped. See the note in the Tasks tab.
+    // sending it would be silently dropped.
     updateTaskMutation.mutate(
       {
         taskId: Number(task.id),

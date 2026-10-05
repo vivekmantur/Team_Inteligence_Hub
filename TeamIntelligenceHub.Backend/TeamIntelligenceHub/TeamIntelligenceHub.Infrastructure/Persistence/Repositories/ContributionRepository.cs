@@ -1,20 +1,42 @@
+// 1. Get a contribution by ID
+// 2. Get the contributions for an initiative
+// 3. Get submitted customer stories
+// 4. Get submitted testimonials
+// 5. Add a contribution
+// 6. Update a contribution
+// 7. Remove a contribution
+// 8. Replace a contribution's contributors
+// 9. Replace a contribution's links
+// 10. Save a contribution's detail sections
+// 11. Get the tag vocabulary
+
 using Microsoft.EntityFrameworkCore;
 using TeamIntelligenceHub.Application.Interfaces.Repositories;
 using TeamIntelligenceHub.Domain.Entities;
+using TeamIntelligenceHub.Domain.Enums;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Repositories;
 
+/// <summary>
+/// EF Core implementation of IContributionRepository, covering contributions with their
+/// contributors, links, attachments, and conditional detail sections.
+/// </summary>
 public class ContributionRepository : IContributionRepository
 {
     private readonly TeamIntelligenceHubDbContext _context;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ContributionRepository"/> class.
+    /// </summary>
+    /// <param name="context">The database context used to read and save contributions and their child rows.</param>
     public ContributionRepository(TeamIntelligenceHubDbContext context)
     {
         _context = context;
     }
 
     /// <summary>
-    /// The full graph. Tags, Types, and ReuseTargets need no Include: they are columns
+    /// Builds the contribution query with the full graph included. Tags, Types, and
+    /// ReuseTargets need no Include: they are columns
     /// on the row, which is most of the reason they are JSON rather than child tables.
     /// </summary>
     private IQueryable<Contribution> WithDetail()
@@ -30,14 +52,17 @@ public class ContributionRepository : IContributionRepository
             .Include(x => x.Risk)
                 .ThenInclude(r => r!.OwnerUser)
             .Include(x => x.AiPractice)
-            .Include(x => x.CustomerStory);
+            .Include(x => x.CustomerStory)
+            .Include(x => x.Testimonial);
     }
 
+    /// <inheritdoc />
     public async Task<Contribution?> GetByIdAsync(int id)
     {
         return await WithDetail().FirstOrDefaultAsync(x => x.Id == id);
     }
 
+    /// <inheritdoc />
     public async Task<List<Contribution>> GetByInitiativeIdAsync(int initiativeId)
     {
         // Newest first: a feed is read from the top.
@@ -47,6 +72,25 @@ public class ContributionRepository : IContributionRepository
             .ToListAsync();
     }
 
+    /// <inheritdoc />
+    public async Task<List<Contribution>> GetCustomerStoriesAsync()
+    {
+        return await WithDetail()
+            .Where(x => x.CustomerStory != null && x.Status == ContributionStatus.Submitted)
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task<List<Contribution>> GetTestimonialsAsync()
+    {
+        return await WithDetail()
+            .Where(x => x.Testimonial != null && x.Status == ContributionStatus.Submitted)
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync();
+    }
+
+    /// <inheritdoc />
     public async Task<Contribution> AddAsync(Contribution contribution)
     {
         await _context.Contributions.AddAsync(contribution);
@@ -56,6 +100,7 @@ public class ContributionRepository : IContributionRepository
         return contribution;
     }
 
+    /// <inheritdoc />
     public async Task UpdateAsync(Contribution contribution)
     {
         _context.Contributions.Update(contribution);
@@ -63,6 +108,7 @@ public class ContributionRepository : IContributionRepository
         await _context.SaveChangesAsync();
     }
 
+    /// <inheritdoc />
     public async Task RemoveAsync(Contribution contribution)
     {
         // Every child cascades in the database, including the attachment rows. The blob
@@ -72,6 +118,7 @@ public class ContributionRepository : IContributionRepository
         await _context.SaveChangesAsync();
     }
 
+    /// <inheritdoc />
     public async Task ReplaceContributorsAsync(
         int contributionId,
         IReadOnlyCollection<ContributionContributor> contributors)
@@ -99,6 +146,7 @@ public class ContributionRepository : IContributionRepository
         }
     }
 
+    /// <inheritdoc />
     public async Task ReplaceLinksAsync(
         int contributionId,
         IReadOnlyCollection<ContributionLink> links)
@@ -122,18 +170,22 @@ public class ContributionRepository : IContributionRepository
         await _context.SaveChangesAsync();
     }
 
+    /// <inheritdoc />
     public async Task SaveDetailSectionsAsync(
         int contributionId,
         ContributionMetric? metric,
         ContributionRisk? risk,
         ContributionAiPractice? aiPractice,
-        ContributionCustomerStory? customerStory)
+        ContributionCustomerStory? customerStory,
+        ContributionTestimonial? testimonial)
     {
         await UpsertAsync(_context.ContributionMetrics, contributionId, metric);
         await UpsertAsync(_context.ContributionRisks, contributionId, risk);
         await UpsertAsync(_context.ContributionAiPractices, contributionId, aiPractice);
         await UpsertAsync(
             _context.ContributionCustomerStories, contributionId, customerStory);
+        await UpsertAsync(
+            _context.ContributionTestimonials, contributionId, testimonial);
 
         await _context.SaveChangesAsync();
     }
@@ -165,6 +217,7 @@ public class ContributionRepository : IContributionRepository
         }
     }
 
+    /// <inheritdoc />
     public async Task<List<string>> GetTagVocabularyAsync(string? search, int take)
     {
         var query = _context.Contributions.SelectMany(x => x.Tags);

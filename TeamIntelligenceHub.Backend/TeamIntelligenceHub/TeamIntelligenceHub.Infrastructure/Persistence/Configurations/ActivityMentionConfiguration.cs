@@ -5,8 +5,12 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Configures the table, keys, columns, and relationships for the <see cref="ActivityMention"/> entity.
+/// </summary>
 public class ActivityMentionConfiguration : IEntityTypeConfiguration<ActivityMention>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<ActivityMention> builder)
     {
         builder.ToTable("ActivityMentions");

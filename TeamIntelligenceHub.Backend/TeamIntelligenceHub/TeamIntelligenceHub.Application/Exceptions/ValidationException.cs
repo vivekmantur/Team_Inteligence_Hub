@@ -6,6 +6,10 @@
 /// </summary>
 public class ValidationException : Exception
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ValidationException"/> class.
+    /// </summary>
+    /// <param name="message">A description of the business rule the request breaks.</param>
     public ValidationException(string message)
         : base(message)
     {

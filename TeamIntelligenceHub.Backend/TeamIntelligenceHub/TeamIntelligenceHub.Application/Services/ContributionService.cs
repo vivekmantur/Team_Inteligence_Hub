@@ -1,4 +1,15 @@
-﻿using TeamIntelligenceHub.Application.DTOs;
+﻿// 1. Get all contributions on an Initiative
+// 2. Get one contribution by ID
+// 3. Create a contribution
+// 4. Update a contribution
+// 5. Delete a contribution with its stored files
+// 6. Get submitted Customer Story cards
+// 7. Get submitted Testimonial cards
+// 8. Get document-extracted customer story cards
+// 9. Get document-extracted testimonial cards
+// 10. Get the tag vocabulary for typeahead
+
+using TeamIntelligenceHub.Application.DTOs;
 using TeamIntelligenceHub.Application.Exceptions;
 using TeamIntelligenceHub.Application.Interfaces;
 using TeamIntelligenceHub.Application.Interfaces.Repositories;
@@ -8,6 +19,10 @@ using TeamIntelligenceHub.Domain.Enums;
 
 namespace TeamIntelligenceHub.Application.Services;
 
+/// <summary>
+/// Validates and saves contributions with their whole graph, and builds the Stories &amp;
+/// Evidence cards from submitted and document-extracted content.
+/// </summary>
 public class ContributionService : IContributionService
 {
     /// <summary>
@@ -16,7 +31,10 @@ public class ContributionService : IContributionService
     /// </summary>
     private const string DefaultContributorRole = "Contributor";
 
+    /// <summary>How many tags the typeahead returns when the caller does not say.</summary>
     private const int DefaultTagVocabularyTake = 20;
+
+    /// <summary>The most tags the typeahead returns in one call.</summary>
     private const int MaxTagVocabularyTake = 100;
 
     private readonly IContributionRepository _contributionRepository;
@@ -25,14 +43,26 @@ public class ContributionService : IContributionService
     private readonly IUserRepository _userRepository;
     private readonly ICurrentUserService _currentUserService;
     private readonly IFileStorage _fileStorage;
+    private readonly IDocumentTestimonialAndCustomerStoryRepository _documentInsightRepository;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ContributionService"/> class.
+    /// </summary>
+    /// <param name="contributionRepository">The repository that stores contributions and their graph.</param>
+    /// <param name="initiativeRepository">The repository used to confirm the Initiative exists.</param>
+    /// <param name="memberRepository">The repository used to enroll credited people on the team.</param>
+    /// <param name="userRepository">The repository used to resolve the caller and credited people.</param>
+    /// <param name="currentUserService">The service that exposes the signed-in caller's identity.</param>
+    /// <param name="fileStorage">The store that attachment files are removed from on delete.</param>
+    /// <param name="documentInsightRepository">The repository that loads document-extracted stories and testimonials.</param>
     public ContributionService(
         IContributionRepository contributionRepository,
         IInitiativeRepository initiativeRepository,
         IInitiativeMemberRepository memberRepository,
         IUserRepository userRepository,
         ICurrentUserService currentUserService,
-        IFileStorage fileStorage)
+        IFileStorage fileStorage,
+        IDocumentTestimonialAndCustomerStoryRepository documentInsightRepository)
     {
         _contributionRepository = contributionRepository;
         _initiativeRepository = initiativeRepository;
@@ -40,8 +70,10 @@ public class ContributionService : IContributionService
         _userRepository = userRepository;
         _currentUserService = currentUserService;
         _fileStorage = fileStorage;
+        _documentInsightRepository = documentInsightRepository;
     }
 
+    /// <inheritdoc />
     public async Task<List<ContributionResponseDto>> GetByInitiativeAsync(int initiativeId)
     {
         await RequireInitiativeAsync(initiativeId);
@@ -52,11 +84,13 @@ public class ContributionService : IContributionService
         return contributions.Select(MapToDto).ToList();
     }
 
+    /// <inheritdoc />
     public async Task<ContributionResponseDto> GetByIdAsync(int contributionId)
     {
         return MapToDto(await RequireContributionAsync(contributionId));
     }
 
+    /// <inheritdoc />
     public async Task<ContributionResponseDto> CreateAsync(
         int initiativeId,
         CreateContributionRequestDto request)
@@ -96,6 +130,7 @@ public class ContributionService : IContributionService
         return await ReloadAsync(created.Id);
     }
 
+    /// <inheritdoc />
     public async Task<ContributionResponseDto> UpdateAsync(
         int contributionId,
         UpdateContributionRequestDto request)
@@ -141,6 +176,7 @@ public class ContributionService : IContributionService
         return await ReloadAsync(contribution.Id);
     }
 
+    /// <inheritdoc />
     public async Task RemoveAsync(
         int contributionId,
         CancellationToken cancellationToken = default)
@@ -167,6 +203,41 @@ public class ContributionService : IContributionService
         await _contributionRepository.RemoveAsync(contribution);
     }
 
+    /// <inheritdoc />
+    public async Task<List<CustomerStoryCardDto>> GetCustomerStoriesAsync()
+    {
+        var contributions = await _contributionRepository.GetCustomerStoriesAsync();
+
+        return contributions.Select(MapToCustomerStoryCard).ToList();
+    }
+
+    /// <inheritdoc />
+    public async Task<List<TestimonialCardDto>> GetTestimonialsAsync()
+    {
+        var contributions = await _contributionRepository.GetTestimonialsAsync();
+
+        return contributions.Select(MapToTestimonialCard).ToList();
+    }
+
+    /// <inheritdoc />
+    public async Task<List<DocumentCustomerStoryCardDto>> GetDocumentCustomerStoriesAsync()
+    {
+        var rows = await _documentInsightRepository.GetByTypeAsync(
+            DocumentInsightType.CustomerStory);
+
+        return rows.Select(MapToDocumentCustomerStoryCard).ToList();
+    }
+
+    /// <inheritdoc />
+    public async Task<List<DocumentTestimonialCardDto>> GetDocumentTestimonialsAsync()
+    {
+        var rows = await _documentInsightRepository.GetByTypeAsync(
+            DocumentInsightType.Testimonial);
+
+        return rows.Select(MapToDocumentTestimonialCard).ToList();
+    }
+
+    /// <inheritdoc />
     public async Task<List<string>> GetTagVocabularyAsync(string? search, int? take)
     {
         var limit = Math.Clamp(
@@ -212,6 +283,9 @@ public class ContributionService : IContributionService
                 : null,
             types.Contains(ContributionType.CustomerStory)
                 ? BuildCustomerStory(contributionId, request.CustomerStory)
+                : null,
+            types.Contains(ContributionType.Testimonial)
+                ? BuildTestimonial(contributionId, request.Testimonial)
                 : null);
 
         // Runs last, so a failure here cannot leave people enrolled on an Initiative for
@@ -310,6 +384,7 @@ public class ContributionService : IContributionService
         };
     }
 
+    /// <summary>Builds the risk section, rejecting an owner who does not exist.</summary>
     private async Task<ContributionRisk?> BuildRiskAsync(
         int contributionId,
         ContributionRiskRequestDto? request)
@@ -387,11 +462,31 @@ public class ContributionService : IContributionService
         };
     }
 
+    private static ContributionTestimonial? BuildTestimonial(
+        int contributionId,
+        ContributionTestimonialRequestDto? request)
+    {
+        if (request is null)
+        {
+            return null;
+        }
+
+        return new ContributionTestimonial
+        {
+            ContributionId = contributionId,
+            Quote = RequireText(request.Quote, "Quote"),
+            SpeakerName = RequireText(request.SpeakerName, "Speaker name"),
+            SpeakerRole = Clean(request.SpeakerRole),
+            Audience = request.Audience ?? TestimonialAudience.Stakeholder,
+            Sentiment = request.Sentiment ?? TestimonialSentiment.Positive
+        };
+    }
+
     /// <summary>
     /// Puts a credited person on the Initiative's team if they are not already on it.
     /// </summary>
     /// <remarks>
-    /// Matches what assigning a task already does. Crediting somebody on an Initiative's
+    /// Mirrors what assigning a task does. Crediting somebody on an Initiative's
     /// work makes them part of it, and the Team tab should say so without anyone adding
     /// them by hand. The unique index on (InitiativeId, UserId) is the real guarantee
     /// against duplicates; this check only avoids attempting an insert that would
@@ -423,7 +518,7 @@ public class ContributionService : IContributionService
     /// Refuses a detail section whose type was not selected.
     /// </summary>
     /// <remarks>
-    /// This is the invariant the four separate tables exist to protect. Accepting a
+    /// This is the invariant the separate detail tables exist to protect. Accepting a
     /// metric on a Progress Update would write a row nothing ever reads, because every
     /// reader keys off Types.
     /// </remarks>
@@ -435,6 +530,7 @@ public class ContributionService : IContributionService
         Check(request.Risk, ContributionType.Risk, "a risk");
         Check(request.AiPractice, ContributionType.AiBestPractice, "an AI best practice");
         Check(request.CustomerStory, ContributionType.CustomerStory, "a customer story");
+        Check(request.Testimonial, ContributionType.Testimonial, "a testimonial");
 
         void Check(object? section, ContributionType required, string label)
         {
@@ -502,6 +598,7 @@ public class ContributionService : IContributionService
         return result;
     }
 
+    /// <summary>Trims the URL and rejects anything that is not an absolute http or https link within the length limit.</summary>
     private static string RequireUrl(string? url)
     {
         var value = url?.Trim();
@@ -562,6 +659,7 @@ public class ContributionService : IContributionService
                 $"Contribution {contributionId} does not exist.");
     }
 
+    /// <summary>Resolves the signed-in caller to their local user row.</summary>
     private async Task<User> GetCallerAsync()
     {
         var entraObjectId = _currentUserService.EntraObjectId;
@@ -576,6 +674,7 @@ public class ContributionService : IContributionService
                 "Your profile has not been created yet. Reload the app and try again.");
     }
 
+    /// <summary>Reloads the contribution so its whole graph is populated.</summary>
     private async Task<ContributionResponseDto> ReloadAsync(int contributionId)
     {
         return MapToDto(await RequireContributionAsync(contributionId));
@@ -690,7 +789,111 @@ public class ContributionService : IContributionService
                     Outcome = contribution.CustomerStory.Outcome,
                     Quote = contribution.CustomerStory.Quote,
                     BusinessValue = contribution.CustomerStory.BusinessValue
+                },
+            Testimonial = contribution.Testimonial is null
+                ? null
+                : new ContributionTestimonialDto
+                {
+                    Quote = contribution.Testimonial.Quote,
+                    SpeakerName = contribution.Testimonial.SpeakerName,
+                    SpeakerRole = contribution.Testimonial.SpeakerRole,
+                    Audience = contribution.Testimonial.Audience,
+                    Sentiment = contribution.Testimonial.Sentiment
                 }
+        };
+    }
+
+    /// <summary>
+    /// Assumes CustomerStory is not null: GetCustomerStoriesAsync already filtered on it.
+    /// </summary>
+    private static CustomerStoryCardDto MapToCustomerStoryCard(Contribution contribution)
+    {
+        var story = contribution.CustomerStory!;
+
+        return new CustomerStoryCardDto
+        {
+            Id = contribution.Id,
+            InitiativeId = contribution.InitiativeId,
+            InitiativeName = contribution.Initiative?.Name ?? string.Empty,
+            SubmittedByUserId = contribution.SubmittedByUserId,
+            Title = contribution.Title,
+            KeyTakeaway = contribution.KeyTakeaway,
+            SubmittedAt = contribution.SubmittedAt,
+            CustomerName = story.CustomerName,
+            Summary = story.Summary,
+            Outcome = story.Outcome,
+            Quote = story.Quote,
+            BusinessValue = story.BusinessValue
+        };
+    }
+
+    /// <summary>
+    /// Assumes Testimonial is not null: GetTestimonialsAsync already filtered on it.
+    /// </summary>
+    private static TestimonialCardDto MapToTestimonialCard(Contribution contribution)
+    {
+        var testimonial = contribution.Testimonial!;
+
+        return new TestimonialCardDto
+        {
+            Id = contribution.Id,
+            InitiativeId = contribution.InitiativeId,
+            InitiativeName = contribution.Initiative?.Name ?? string.Empty,
+            SubmittedByUserId = contribution.SubmittedByUserId,
+            SubmittedAt = contribution.SubmittedAt,
+            Quote = testimonial.Quote,
+            SpeakerName = testimonial.SpeakerName,
+            SpeakerRole = testimonial.SpeakerRole,
+            Audience = testimonial.Audience,
+            Sentiment = testimonial.Sentiment
+        };
+    }
+
+    /// <summary>
+    /// Assumes GetByTypeAsync's Include chain already loaded ContributionAttachment,
+    /// its Contribution, and that Contribution's Initiative.
+    /// </summary>
+    private static DocumentCustomerStoryCardDto MapToDocumentCustomerStoryCard(
+        DocumentTestimonialAndCustomerStory row)
+    {
+        var contribution = row.ContributionAttachment.Contribution;
+
+        return new DocumentCustomerStoryCardDto
+        {
+            Id = row.Id,
+            ContributionId = contribution.Id,
+            InitiativeId = contribution.InitiativeId,
+            InitiativeName = contribution.Initiative?.Name ?? string.Empty,
+            SourceFileName = row.ContributionAttachment.FileName,
+            CustomerName = row.CustomerName,
+            Summary = row.Summary,
+            Outcome = row.Outcome,
+            Quote = row.Quote,
+            BusinessValue = row.BusinessValue
+        };
+    }
+
+    /// <summary>
+    /// Assumes GetByTypeAsync's Include chain already loaded ContributionAttachment,
+    /// its Contribution, and that Contribution's Initiative.
+    /// </summary>
+    private static DocumentTestimonialCardDto MapToDocumentTestimonialCard(
+        DocumentTestimonialAndCustomerStory row)
+    {
+        var contribution = row.ContributionAttachment.Contribution;
+
+        return new DocumentTestimonialCardDto
+        {
+            Id = row.Id,
+            ContributionId = contribution.Id,
+            InitiativeId = contribution.InitiativeId,
+            InitiativeName = contribution.Initiative?.Name ?? string.Empty,
+            SourceFileName = row.ContributionAttachment.FileName,
+            Quote = row.Quote,
+            SpeakerName = row.SpeakerName,
+            SpeakerRole = row.SpeakerRole,
+            Audience = row.Audience,
+            Sentiment = row.Sentiment
         };
     }
 }

@@ -3,22 +3,18 @@ using TeamIntelligenceHub.Application.Interfaces;
 namespace TeamIntelligenceHub.Infrastructure.Storage;
 
 /// <summary>
-/// Binds the "BlobStorage" configuration section.
+/// Binds the "BlobStorage" configuration section. Supply a connection string, or an
+/// AccountUri for managed identity; the connection string wins when both are present.
 /// </summary>
-/// <remarks>
-/// Values resolve through IConfiguration, so appsettings.json, user secrets, and
-/// environment variables all work without a code change. Supply either a connection
-/// string, or an AccountUri to authenticate with a managed identity instead — the
-/// connection string wins when both are present.
-/// </remarks>
 public class BlobStorageOptions
 {
+    /// <summary>The name of the configuration section these options bind to.</summary>
     public const string SectionName = "BlobStorage";
 
-    /// <summary>Full connection string. Prefer AccountUri plus a managed identity.</summary>
+    /// <summary>The full storage account connection string. Prefer AccountUri plus a managed identity.</summary>
     public string? ConnectionString { get; set; }
 
-    /// <summary>e.g. https://myaccount.blob.core.windows.net</summary>
+    /// <summary>The blob service URI used with a managed identity, e.g. https://myaccount.blob.core.windows.net.</summary>
     public string? AccountUri { get; set; }
 
     /// <summary>
@@ -40,11 +36,17 @@ public class BlobStorageOptions
     /// </remarks>
     public string ContributionsContainerName { get; set; } = "contribution-attachments";
 
+    /// <summary>Gets a value indicating whether a connection string or an account URI is set.</summary>
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(ConnectionString) ||
         !string.IsNullOrWhiteSpace(AccountUri);
 
-    /// <summary>Maps a storage area onto the container that holds it.</summary>
+    /// <summary>
+    /// Maps a storage area onto the container that holds it.
+    /// </summary>
+    /// <param name="area">The storage area to resolve.</param>
+    /// <returns>The name of the container for that area.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when no container is configured for the area.</exception>
     public string ResolveContainerName(FileStorageArea area) => area switch
     {
         FileStorageArea.TaskAttachments => ContainerName,

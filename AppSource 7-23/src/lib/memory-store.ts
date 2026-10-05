@@ -4,6 +4,7 @@
  * Keep API intentionally small; extend only if multiple features need the same primitive.
  */
 
+/** Values are untyped in storage; callers choose the type when they read. */
 export type MemoryValue = unknown;
 
 interface MemoryStoreApiBase {
@@ -45,6 +46,7 @@ const core: MemoryStoreApiBase = {
     },
 };
 
+/** The module-wide in-memory store. `ensure` returns a key's value, creating it with `init` when absent. */
 export const memory: MemoryStoreApi = Object.assign(core, {
     ensure<T>(key: string, init: () => T): T {
         const existing = core.get<T>(key);

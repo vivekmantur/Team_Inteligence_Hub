@@ -1,18 +1,34 @@
+// 1. Get an activity post by ID
+// 2. Get the activity feed for an initiative
+// 3. Add an activity post
+// 4. Update an activity post
+// 5. Remove an activity post, detaching the tasks raised from it
+// 6. Replace an activity post's mentions
+
 using Microsoft.EntityFrameworkCore;
 using TeamIntelligenceHub.Application.Interfaces.Repositories;
 using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Repositories;
 
+/// <summary>
+/// EF Core implementation of IActivityRepository, loading posts with their author, mentions,
+/// and raised tasks.
+/// </summary>
 public class ActivityRepository : IActivityRepository
 {
     private readonly TeamIntelligenceHubDbContext _context;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ActivityRepository"/> class.
+    /// </summary>
+    /// <param name="context">The database context used to read and save activity posts and their mentions.</param>
     public ActivityRepository(TeamIntelligenceHubDbContext context)
     {
         _context = context;
     }
 
+    /// <summary>Builds the activity query with the author, mentions, and raised tasks included.</summary>
     private IQueryable<Activity> WithDetail()
     {
         return _context.Activities
@@ -23,11 +39,13 @@ public class ActivityRepository : IActivityRepository
                 .ThenInclude(t => t.AssignedToUser);
     }
 
+    /// <inheritdoc />
     public async Task<Activity?> GetByIdAsync(int id)
     {
         return await WithDetail().FirstOrDefaultAsync(x => x.Id == id);
     }
 
+    /// <inheritdoc />
     public async Task<List<Activity>> GetByInitiativeIdAsync(int initiativeId)
     {
         // Newest first: a feed is read from the top.
@@ -37,6 +55,7 @@ public class ActivityRepository : IActivityRepository
             .ToListAsync();
     }
 
+    /// <inheritdoc />
     public async Task<Activity> AddAsync(Activity activity)
     {
         await _context.Activities.AddAsync(activity);
@@ -46,6 +65,7 @@ public class ActivityRepository : IActivityRepository
         return activity;
     }
 
+    /// <inheritdoc />
     public async Task UpdateAsync(Activity activity)
     {
         _context.Activities.Update(activity);
@@ -53,6 +73,7 @@ public class ActivityRepository : IActivityRepository
         await _context.SaveChangesAsync();
     }
 
+    /// <inheritdoc />
     public async Task RemoveAsync(Activity activity)
     {
         var raisedTasks = await _context.Tasks
@@ -70,6 +91,7 @@ public class ActivityRepository : IActivityRepository
         await _context.SaveChangesAsync();
     }
 
+    /// <inheritdoc />
     public async Task ReplaceMentionsAsync(
         int activityId,
         IReadOnlyCollection<int> mentionedUserIds)

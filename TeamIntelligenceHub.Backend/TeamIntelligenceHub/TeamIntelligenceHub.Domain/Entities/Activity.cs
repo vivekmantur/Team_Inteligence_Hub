@@ -1,13 +1,9 @@
 namespace TeamIntelligenceHub.Domain.Entities;
 
 /// <summary>
-/// A post on an Initiative's activity feed.
+/// A post on an Initiative's activity feed. Tasks raised from a post point back through
+/// Tasks.SourceActivityId, because one post can raise several tasks.
 /// </summary>
-/// <remarks>
-/// When AutoCreateTaskEnabled is set, posting spawns a task for each person mentioned.
-/// Those tasks point back through Tasks.SourceActivityId rather than the feed pointing
-/// at them, because one post can raise several tasks.
-/// </remarks>
 public class Activity
 {
     // Single source of truth for field limits, shared with the EF configuration and

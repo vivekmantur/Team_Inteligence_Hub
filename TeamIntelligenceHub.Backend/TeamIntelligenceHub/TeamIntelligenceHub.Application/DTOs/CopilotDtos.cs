@@ -1,10 +1,12 @@
 namespace TeamIntelligenceHub.Application.DTOs;
 
+/// <summary>A question for Copilot.</summary>
 public class CopilotQuestionRequestDto
 {
     public string Question { get; set; } = null!;
 }
 
+/// <summary>Copilot's answer, with the chunks it was grounded on.</summary>
 public class CopilotAnswerDto
 {
     public string Answer { get; set; } = null!;
@@ -18,6 +20,7 @@ public class CopilotAnswerDto
     public List<string> SuggestedQuestions { get; set; } = new();
 }
 
+/// <summary>One retrieved chunk cited in support of an answer.</summary>
 public class CopilotCitationDto
 {
     public string? Title { get; set; }

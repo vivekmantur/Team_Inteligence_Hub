@@ -33,6 +33,7 @@ import {
   Check,
   AlertTriangle,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useAddContribution } from "@/components/contribution/ContributionContext";
 import {
   Dialog,
@@ -56,6 +57,7 @@ interface Props {
   initiativeId: string;
 }
 
+/** Team tab for an Initiative: lists API-backed members with per-person stats and lets managers add, edit, and remove them. */
 export function InitiativeTeamTab({ initiativeId }: Props) {
   const {
     reassignTasks,
@@ -89,6 +91,7 @@ export function InitiativeTeamTab({ initiativeId }: Props) {
           roleOther: isPreset ? undefined : m.role,
           responsibilityArea: m.responsibilityArea ?? undefined,
           allocation: m.allocation ?? undefined,
+          totalAllocationAcrossInitiatives: m.totalAllocationAcrossInitiatives,
           avatarColor: avatarColorFor(m.userDisplayName),
           addedAt: m.joinedAt,
         } satisfies InitiativeTeamMember;
@@ -453,6 +456,18 @@ function MemberRow({
         <Stat icon={Activity} label="Activity" value={activityCount} />
       </div>
 
+      {typeof member.totalAllocationAcrossInitiatives === "number" && (
+        <div
+          className="hidden md:flex flex-col items-center justify-center rounded-lg bg-white/70 border border-white/60 px-3 py-1.5 text-center shrink-0"
+          title="Current total allocation"
+        >
+          <div className="text-[9px] text-muted-foreground uppercase tracking-wide">Total</div>
+          <div className="text-sm font-semibold">
+            {member.totalAllocationAcrossInitiatives}%
+          </div>
+        </div>
+      )}
+
       {canManage && (
         <div className="relative self-start md:self-center" ref={menuRef}>
           <button
@@ -499,7 +514,7 @@ function MemberRow({
   );
 }
 
-function Stat({ icon: Icon, label, value }: { icon: any; label: string; value: number | string }) {
+function Stat({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: number | string }) {
   return (
     <div className="rounded-lg bg-white/70 border border-white/60 px-2 py-1.5 text-center">
       <div className="flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">

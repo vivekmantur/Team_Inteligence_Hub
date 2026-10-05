@@ -5,8 +5,9 @@ using TeamIntelligenceHub.Domain.Enums;
 namespace TeamIntelligenceHub.Application.DTOs;
 
 /// <summary>
-/// Payload for editing a task. Every field is replaced, so omitting one clears it —
-/// send the current value to keep it.
+/// Payload for editing a task. Title, assignee, and due date are replaced, so omitting
+/// the assignee or due date clears it; Priority and Status keep their current value
+/// when omitted.
 /// </summary>
 public class UpdateTaskRequestDto
 {

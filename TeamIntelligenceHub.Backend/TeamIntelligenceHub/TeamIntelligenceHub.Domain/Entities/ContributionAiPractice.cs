@@ -2,15 +2,8 @@ namespace TeamIntelligenceHub.Domain.Entities;
 
 /// <summary>
 /// A repeatable AI or Copilot pattern worth sharing. Present only when the contribution
-/// is an AI Best Practice.
+/// is an AI Best Practice. Time saved is numeric hours per week, so it can be summed.
 /// </summary>
-/// <remarks>
-/// Shared primary key with Contribution.
-///
-/// Time saved is numeric so it can be summed across contributions, which is the reason to
-/// capture it at all. The unit is fixed as hours per week by the UI label rather than
-/// stored alongside the number, so the values stay comparable.
-/// </remarks>
 public class ContributionAiPractice
 {
     public const int ToolMaxLength = 100;

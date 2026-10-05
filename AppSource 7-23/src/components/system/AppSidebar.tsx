@@ -4,13 +4,11 @@ import {
   BarChart3,
   Rocket,
   Users,
-  Target,
+  UserCog,
   MessageSquareQuote,
   PenSquare,
   Library,
   Sparkles,
-  Settings,
-  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,15 +17,14 @@ const nav = [
   { to: "/analytics", label: "Insights", icon: BarChart3 },
   { to: "/initiatives", label: "Initiatives", icon: Rocket },
   { to: "/team", label: "Team Contributions", icon: Users },
-  { to: "/customer-zero", label: "Customer Zero", icon: Target },
-  { to: "/testimonials", label: "Testimonials", icon: MessageSquareQuote },
+  { to: "/stories", label: "Stories & Evidence", icon: MessageSquareQuote },
   { to: "/content-studio", label: "Content Studio", icon: PenSquare },
   { to: "/knowledge", label: "Knowledge Repository", icon: Library },
   { to: "/copilot", label: "AI Copilot", icon: Sparkles },
-  { to: "/architecture", label: "Architecture Doc", icon: BookOpen },
-  { to: "/admin", label: "Administration", icon: Settings },
+  { to: "/aboutteam", label: "Team", icon: UserCog },
 ];
 
+/** Fixed left navigation sidebar (large screens only) with route links and a Copilot status card. */
 export function AppSidebar() {
   return (
     <aside className="hidden lg:flex fixed inset-y-0 left-0 w-64 z-30 flex-col p-3">

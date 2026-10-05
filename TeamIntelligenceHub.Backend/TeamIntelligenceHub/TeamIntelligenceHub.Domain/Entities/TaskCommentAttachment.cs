@@ -1,13 +1,9 @@
 ﻿namespace TeamIntelligenceHub.Domain.Entities;
 
 /// <summary>
-/// Metadata for a file attached to a comment.
+/// Metadata for a file attached to a comment. The file itself lives in Azure Blob Storage
+/// under BlobName.
 /// </summary>
-/// <remarks>
-/// The file itself lives in Azure Blob Storage; this row records where. BlobName is the
-/// key within the container, kept separate from FileName so the stored object can be
-/// named safely and uniquely without losing what the person called it.
-/// </remarks>
 public class TaskCommentAttachment
 {
     public const int FileNameMaxLength = 255;

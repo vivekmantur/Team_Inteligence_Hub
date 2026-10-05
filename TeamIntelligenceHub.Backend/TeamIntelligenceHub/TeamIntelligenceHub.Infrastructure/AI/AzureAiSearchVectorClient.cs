@@ -1,3 +1,5 @@
+// 1. Search the index for the chunks closest to a query vector
+
 using Azure;
 using Azure.Identity;
 using Azure.Search.Documents;
@@ -8,17 +10,26 @@ using TeamIntelligenceHub.Application.Interfaces;
 
 namespace TeamIntelligenceHub.Infrastructure.AI;
 
+/// <summary>
+/// Implements IVectorSearchClient by running a vector query, with optional search text, against
+/// the configured Azure AI Search index, optionally filtered to one source document.
+/// </summary>
 public class AzureAiSearchVectorClient : IVectorSearchClient
 {
     private readonly AzureAiSearchOptions _options;
     private readonly Lazy<SearchClient> _client;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AzureAiSearchVectorClient"/> class.
+    /// </summary>
+    /// <param name="options">The Azure AI Search settings that name the endpoint, index, and fields to query.</param>
     public AzureAiSearchVectorClient(IOptions<AzureAiSearchOptions> options)
     {
         _options = options.Value;
         _client = new Lazy<SearchClient>(CreateClient);
     }
 
+    /// <summary>Creates the search client, using the API key when one is set and a managed identity otherwise.</summary>
     private SearchClient CreateClient()
     {
         if (!_options.IsConfigured)
@@ -37,8 +48,11 @@ public class AzureAiSearchVectorClient : IVectorSearchClient
                 endpoint, _options.IndexName, new AzureKeyCredential(_options.ApiKey));
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<RetrievedChunk>> SearchAsync(
         ReadOnlyMemory<float> queryVector,
+        string? searchText = null,
+        string? sourceBlobName = null,
         CancellationToken cancellationToken = default)
     {
         var select = new List<string> { _options.ContentField };
@@ -69,6 +83,21 @@ public class AzureAiSearchVectorClient : IVectorSearchClient
             }
         };
 
+        if (sourceBlobName is not null)
+        {
+            if (string.IsNullOrWhiteSpace(_options.SourceField))
+            {
+                throw new CopilotException(
+                    "Cannot restrict a search to one document: AzureAiSearch:SourceField " +
+                    "is not configured, so there is no field to filter on. Set it to " +
+                    "whatever field in the index carries the blob path or name (e.g. " +
+                    "metadata_storage_name).");
+            }
+
+            searchOptions.Filter =
+                $"{_options.SourceField} eq '{EscapeODataStringLiteral(sourceBlobName)}'";
+        }
+
         foreach (var field in select)
         {
             searchOptions.Select.Add(field);
@@ -77,7 +106,7 @@ public class AzureAiSearchVectorClient : IVectorSearchClient
         try
         {
             var response = await _client.Value.SearchAsync<SearchDocument>(
-                searchText: null, searchOptions, cancellationToken);
+                searchText, searchOptions, cancellationToken);
 
             var chunks = new List<RetrievedChunk>();
 
@@ -111,4 +140,7 @@ public class AzureAiSearchVectorClient : IVectorSearchClient
                 ex);
         }
     }
+
+    /// <summary>OData string literals escape an embedded single quote by doubling it.</summary>
+    private static string EscapeODataStringLiteral(string value) => value.Replace("'", "''");
 }

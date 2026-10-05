@@ -18,12 +18,11 @@ import {
 import { AddContributionWizard } from "./AddContributionWizard";
 
 /**
- * The shape the pages read.
+ * The contribution shape the pages read (Team Contributions, the Initiative detail
+ * header, the Team tab), mapped from the API's `ContributionRecord` by `toContribution`.
  *
- * Kept close to what it was when this was local state, so Team Contributions, the
- * Initiative detail header, and the Team tab did not all have to change at once. The one
- * thing to know: `initiativeId` is a string here because route params are strings, while
- * the API keys on an int.
+ * `initiativeId` is a string here because route params are strings, while the API keys
+ * on an int.
  */
 export interface Contribution {
   id: string;
@@ -102,6 +101,7 @@ function toContribution(record: ContributionRecord): Contribution {
   };
 }
 
+/** Options for opening the add-contribution wizard. */
 export interface OpenAddContributionOptions {
   initiativeId?: string;
 }
@@ -110,25 +110,25 @@ interface ContributionContextValue {
   contributions: Contribution[];
   isLoading: boolean;
   openAddContribution: (opts?: OpenAddContributionOptions) => void;
+  openEditContribution: (contributionId: string) => void;
 }
 
 const ContributionContext = createContext<ContributionContextValue | null>(null);
 
+/** Provides all contributions (fetched per Initiative) and open/edit controls for the add-contribution wizard, which it renders. */
 export function ContributionProvider({ children }: PropsWithChildren) {
   const [open, setOpen] = useState(false);
   const [preselectedInitiativeId, setPreselectedInitiativeId] = useState<string | undefined>(undefined);
+  const [editingContributionId, setEditingContributionId] = useState<string | undefined>(undefined);
 
   const { isAuthenticated } = useAuth();
   const { data: initiatives = [] } = useInitiativesQuery();
 
   /**
-   * Contributions are fetched per Initiative, because that is how the API scopes them.
-   *
-   * Pages such as Team Contributions want them all at once, so the per-Initiative
-   * queries are fanned out here and flattened. Each one caches under the same key the
-   * write hooks invalidate, so a new contribution appears without a refetch loop. If the
-   * Initiative count grows past a few dozen this wants one endpoint rather than a
-   * fan-out.
+   * The API scopes contributions per Initiative, so one query per Initiative is fanned
+   * out here and flattened for pages that need them all. Each caches under the key the
+   * write hooks invalidate, so new contributions appear without a refetch loop. With more
+   * than a few dozen Initiatives this needs a single endpoint instead.
    */
   const results = useQueries({
     queries: initiatives.map((initiative) => ({
@@ -158,13 +158,20 @@ export function ContributionProvider({ children }: PropsWithChildren) {
   const isLoading = results.some((result) => result.isLoading);
 
   const openAddContribution = useCallback((opts?: OpenAddContributionOptions) => {
+    setEditingContributionId(undefined);
     setPreselectedInitiativeId(opts?.initiativeId);
     setOpen(true);
   }, []);
 
+  const openEditContribution = useCallback((contributionId: string) => {
+    setPreselectedInitiativeId(undefined);
+    setEditingContributionId(contributionId);
+    setOpen(true);
+  }, []);
+
   const value = useMemo(
-    () => ({ contributions, isLoading, openAddContribution }),
-    [contributions, isLoading, openAddContribution],
+    () => ({ contributions, isLoading, openAddContribution, openEditContribution }),
+    [contributions, isLoading, openAddContribution, openEditContribution],
   );
 
   return (
@@ -174,11 +181,13 @@ export function ContributionProvider({ children }: PropsWithChildren) {
         open={open}
         onOpenChange={setOpen}
         preselectedInitiativeId={preselectedInitiativeId}
+        editingContributionId={editingContributionId}
       />
     </ContributionContext.Provider>
   );
 }
 
+/** Reads the contribution context; throws when used outside `ContributionProvider`. */
 export function useAddContribution() {
   const ctx = useContext(ContributionContext);
   if (!ctx) throw new Error("useAddContribution must be used within ContributionProvider");

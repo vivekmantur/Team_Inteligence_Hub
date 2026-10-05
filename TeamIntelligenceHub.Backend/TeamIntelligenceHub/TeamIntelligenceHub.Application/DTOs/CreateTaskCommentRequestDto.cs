@@ -4,13 +4,9 @@ using TeamIntelligenceHub.Domain.Entities;
 namespace TeamIntelligenceHub.Application.DTOs;
 
 /// <summary>
-/// Payload for posting a comment or a reply.
+/// Payload for posting a comment or a reply. The task comes from the route and the
+/// author from the bearer token; mentions arrive as resolved user ids.
 /// </summary>
-/// <remarks>
-/// The task comes from the route and the author from the bearer token, so neither can be
-/// set by the body. Mentions are sent as user ids, not parsed out of the text — the client
-/// already knows who it resolved each "@name" to.
-/// </remarks>
 public class CreateTaskCommentRequestDto
 {
     [Required(ErrorMessage = "Comment text is required.")]

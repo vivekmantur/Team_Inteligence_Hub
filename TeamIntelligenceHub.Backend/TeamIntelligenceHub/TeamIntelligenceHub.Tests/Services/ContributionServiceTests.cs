@@ -18,6 +18,7 @@ public class ContributionServiceTests
     private readonly Mock<IUserRepository> _userRepository = new();
     private readonly Mock<ICurrentUserService> _currentUserService = new();
     private readonly Mock<IFileStorage> _fileStorage = new();
+    private readonly Mock<IDocumentTestimonialAndCustomerStoryRepository> _documentInsightRepository = new();
 
     private readonly ContributionService _sut;
 
@@ -29,7 +30,8 @@ public class ContributionServiceTests
             _memberRepository.Object,
             _userRepository.Object,
             _currentUserService.Object,
-            _fileStorage.Object);
+            _fileStorage.Object,
+            _documentInsightRepository.Object);
     }
 
     // -----------------------------------------------------------------------
@@ -84,7 +86,8 @@ public class ContributionServiceTests
         ContributionMetricRequestDto? metric = null,
         ContributionRiskRequestDto? risk = null,
         ContributionAiPracticeRequestDto? aiPractice = null,
-        ContributionCustomerStoryRequestDto? customerStory = null)
+        ContributionCustomerStoryRequestDto? customerStory = null,
+        ContributionTestimonialRequestDto? testimonial = null)
     {
         return new CreateContributionRequestDto
         {
@@ -98,7 +101,8 @@ public class ContributionServiceTests
             Metric = metric,
             Risk = risk,
             AiPractice = aiPractice,
-            CustomerStory = customerStory
+            CustomerStory = customerStory,
+            Testimonial = testimonial
         };
     }
 
@@ -165,6 +169,27 @@ public class ContributionServiceTests
             .Returns(Task.CompletedTask);
 
         return captured;
+    }
+
+    private ContributionTestimonial?[] CaptureTestimonial()
+    {
+        var holder = new ContributionTestimonial?[1];
+
+        _contributionRepository
+            .Setup(r => r.SaveDetailSectionsAsync(
+                It.IsAny<int>(),
+                It.IsAny<ContributionMetric?>(),
+                It.IsAny<ContributionRisk?>(),
+                It.IsAny<ContributionAiPractice?>(),
+                It.IsAny<ContributionCustomerStory?>(),
+                It.IsAny<ContributionTestimonial?>()))
+            .Callback<
+                int, ContributionMetric?, ContributionRisk?, ContributionAiPractice?,
+                ContributionCustomerStory?, ContributionTestimonial?>(
+                (_, _, _, _, _, testimonial) => holder[0] = testimonial)
+            .Returns(Task.CompletedTask);
+
+        return holder;
     }
 
     // -----------------------------------------------------------------------
@@ -263,6 +288,26 @@ public class ContributionServiceTests
         var request = BuildValidRequest(
             types: [ContributionType.ProgressUpdate],
             customerStory: new ContributionCustomerStoryRequestDto { CustomerName = "Acme" });
+
+        var act = () => _sut.CreateAsync(1, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task CreateAsync_TestimonialWithoutTestimonialType_ThrowsValidationException()
+    {
+        SetupInitiative();
+        SetupCaller(CreateUser());
+        SetupCreatePipeline();
+
+        var request = BuildValidRequest(
+            types: [ContributionType.ProgressUpdate],
+            testimonial: new ContributionTestimonialRequestDto
+            {
+                Quote = "Great work.",
+                SpeakerName = "Anita Rao"
+            });
 
         var act = () => _sut.CreateAsync(1, request);
 
@@ -799,5 +844,98 @@ public class ContributionServiceTests
         await _sut.GetTagVocabularyAsync(null, take);
 
         _contributionRepository.Verify(r => r.GetTagVocabularyAsync(null, expected), Times.Once);
+    }
+
+    // -----------------------------------------------------------------------
+    // BuildTestimonial
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task CreateAsync_TestimonialWithoutAudienceOrSentiment_DefaultsToStakeholderAndPositive()
+    {
+        SetupInitiative();
+        SetupCaller(CreateUser());
+        SetupCreatePipeline();
+        var captured = CaptureTestimonial();
+
+        var request = BuildValidRequest(
+            types: [ContributionType.Testimonial],
+            testimonial: new ContributionTestimonialRequestDto
+            {
+                Quote = "This team is the storytelling engine of Modern Work.",
+                SpeakerName = "Anita Rao"
+            });
+
+        await _sut.CreateAsync(1, request);
+
+        captured[0].Should().NotBeNull();
+        captured[0]!.Audience.Should().Be(TestimonialAudience.Stakeholder);
+        captured[0]!.Sentiment.Should().Be(TestimonialSentiment.Positive);
+    }
+
+    [Fact]
+    public async Task CreateAsync_TestimonialWithExplicitAudienceAndSentiment_StoresThem()
+    {
+        SetupInitiative();
+        SetupCaller(CreateUser());
+        SetupCreatePipeline();
+        var captured = CaptureTestimonial();
+
+        var request = BuildValidRequest(
+            types: [ContributionType.Testimonial],
+            testimonial: new ContributionTestimonialRequestDto
+            {
+                Quote = "Would love more granular agent telemetry in Fabric.",
+                SpeakerName = "Reece Patterson",
+                SpeakerRole = "Analyst",
+                Audience = TestimonialAudience.Customer,
+                Sentiment = TestimonialSentiment.Constructive
+            });
+
+        await _sut.CreateAsync(1, request);
+
+        captured[0].Should().NotBeNull();
+        captured[0]!.Quote.Should().Be("Would love more granular agent telemetry in Fabric.");
+        captured[0]!.SpeakerName.Should().Be("Reece Patterson");
+        captured[0]!.SpeakerRole.Should().Be("Analyst");
+        captured[0]!.Audience.Should().Be(TestimonialAudience.Customer);
+        captured[0]!.Sentiment.Should().Be(TestimonialSentiment.Constructive);
+    }
+
+    // -----------------------------------------------------------------------
+    // GetTestimonialsAsync
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetTestimonialsAsync_MapsContributionsToTestimonialCards()
+    {
+        var contribution = CreateContribution(id: 5, status: ContributionStatus.Submitted);
+        contribution.Initiative = new Initiative { Id = 1, Name = "Role Hub Rollout" };
+        contribution.Testimonial = new ContributionTestimonial
+        {
+            ContributionId = 5,
+            Quote = "Role Hub finally made Copilot feel personal.",
+            SpeakerName = "Field Seller Council",
+            SpeakerRole = "Customer voice",
+            Audience = TestimonialAudience.Customer,
+            Sentiment = TestimonialSentiment.Positive
+        };
+
+        _contributionRepository
+            .Setup(r => r.GetTestimonialsAsync())
+            .ReturnsAsync([contribution]);
+
+        var result = await _sut.GetTestimonialsAsync();
+
+        result.Should().ContainSingle();
+        var card = result[0];
+        card.Id.Should().Be(5);
+        card.InitiativeId.Should().Be(1);
+        card.InitiativeName.Should().Be("Role Hub Rollout");
+        card.Quote.Should().Be("Role Hub finally made Copilot feel personal.");
+        card.SpeakerName.Should().Be("Field Seller Council");
+        card.SpeakerRole.Should().Be("Customer voice");
+        card.Audience.Should().Be(TestimonialAudience.Customer);
+        card.Sentiment.Should().Be(TestimonialSentiment.Positive);
     }
 }

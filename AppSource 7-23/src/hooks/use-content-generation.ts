@@ -15,6 +15,7 @@ export type ContentFormatWire =
   | "Blog"
   | "CaseStudy";
 
+/** Writing tone as the API sends it. */
 export type ContentToneWire =
   | "Confident"
   | "Inspirational"
@@ -22,6 +23,7 @@ export type ContentToneWire =
   | "StoryDriven"
   | "Playful";
 
+/** Target audience as the API sends it. */
 export type ContentAudienceWire =
   | "Leadership"
   | "Stakeholders"
@@ -29,6 +31,7 @@ export type ContentAudienceWire =
   | "External"
   | "Team";
 
+/** Output length as the API sends it. */
 export type ContentLengthWire = "Short" | "Medium" | "Long";
 
 const CONTENT_FORMAT_LABELS: Record<ContentFormatWire, string> = {
@@ -63,39 +66,55 @@ const CONTENT_LENGTH_LABELS: Record<ContentLengthWire, string> = {
   Long: "Long",
 };
 
-/** Same shape as use-initiatives-api.ts's local toWire helper — kept file-local rather than shared, matching how use-contributions.ts keeps its own label maps rather than importing another hook file's. */
+/**
+ * Returns the wire value whose label matches, or `fallback` when none does. Each hook
+ * module keeps its own copy of this helper and its label maps, so no hook file imports
+ * another's internals.
+ */
 function toWire<T extends string>(labels: Record<T, string>, label: string, fallback: T): T {
   const match = (Object.keys(labels) as T[]).find((key) => labels[key] === label);
   return match ?? fallback;
 }
 
+/** Converts a format label to its wire value; falls back to "LinkedInPost". */
 export const contentFormatToWire = (label: string): ContentFormatWire =>
   toWire(CONTENT_FORMAT_LABELS, label, "LinkedInPost");
 
+/** Converts a format wire value to its display label, or returns the wire value if it has none. */
 export const contentFormatToLabel = (wire: ContentFormatWire): string =>
   CONTENT_FORMAT_LABELS[wire] ?? wire;
 
+/** Converts a tone label to its wire value; falls back to "Confident". */
 export const contentToneToWire = (label: string): ContentToneWire =>
   toWire(CONTENT_TONE_LABELS, label, "Confident");
 
+/** Converts a tone wire value to its display label, or returns the wire value if it has none. */
 export const contentToneToLabel = (wire: ContentToneWire): string =>
   CONTENT_TONE_LABELS[wire] ?? wire;
 
+/** Converts an audience label to its wire value; falls back to "Leadership". */
 export const contentAudienceToWire = (label: string): ContentAudienceWire =>
   toWire(CONTENT_AUDIENCE_LABELS, label, "Leadership");
 
+/** Converts an audience wire value to its display label, or returns the wire value if it has none. */
 export const contentAudienceToLabel = (wire: ContentAudienceWire): string =>
   CONTENT_AUDIENCE_LABELS[wire] ?? wire;
 
+/** Converts a length label to its wire value; falls back to "Medium". */
 export const contentLengthToWire = (label: string): ContentLengthWire =>
   toWire(CONTENT_LENGTH_LABELS, label, "Medium");
 
+/** Converts a length wire value to its display label, or returns the wire value if it has none. */
 export const contentLengthToLabel = (wire: ContentLengthWire): string =>
   CONTENT_LENGTH_LABELS[wire] ?? wire;
 
+/** Every format wire value, in label-map order. */
 export const CONTENT_FORMATS = Object.keys(CONTENT_FORMAT_LABELS) as ContentFormatWire[];
+/** Every tone wire value, in label-map order. */
 export const CONTENT_TONES = Object.keys(CONTENT_TONE_LABELS) as ContentToneWire[];
+/** Every audience wire value, in label-map order. */
 export const CONTENT_AUDIENCES = Object.keys(CONTENT_AUDIENCE_LABELS) as ContentAudienceWire[];
+/** Every length wire value, in label-map order. */
 export const CONTENT_LENGTHS = Object.keys(CONTENT_LENGTH_LABELS) as ContentLengthWire[];
 
 // ---------------------------------------------------------------------------
@@ -149,15 +168,12 @@ export type ContentGenerationResult = {
 /**
  * Generates one piece of Content Studio output for an Initiative.
  *
- * initiativeId travels with each call rather than being bound once — unlike
- * useCreateContribution's split, Retry has to replay a failed request against the exact
- * Initiative it was originally submitted for, even if the picker has since moved to a
- * different one, so the Initiative can't be fixed at hook-creation time here. Same
- * per-call-id shape as useUpdateContribution's mutationFn.
+ * initiativeId is passed with each call instead of being bound when the hook is created,
+ * so Retry replays a failed request against the Initiative it was first sent for, even
+ * after the picker moves to another one.
  *
- * Failures surface as apiFetch's own ApiError (status + server message), unmodified —
- * this hook adds no error handling of its own, so a 502 from a provider failure or a 404
- * from a missing Initiative reach the caller exactly as the server sent them.
+ * Errors reach the caller as apiFetch's ApiError, unchanged: a 502 from the provider or a
+ * 404 for a missing Initiative arrives exactly as the server sent it.
  */
 export function useGenerateContent() {
   return useMutation({

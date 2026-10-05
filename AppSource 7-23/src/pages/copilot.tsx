@@ -50,6 +50,12 @@ interface Msg {
   suggestedQuestions?: string[];
 }
 
+/**
+ * Copilot chat screen. Questions go to the real Copilot API, and the answer is revealed
+ * client-side with its citations and suggested follow-ups. Citations link to matching
+ * attachments from real API contributions. The starter suggestion chips are a hard-coded
+ * list.
+ */
 export default function CopilotPage() {
   const [params] = useSearchParams();
   const initialPrompt = params.get("prompt") || "";

@@ -1,3 +1,5 @@
+// 1. Build the generation context for a content format
+
 using TeamIntelligenceHub.Domain.Entities;
 using TeamIntelligenceHub.Domain.Enums;
 
@@ -5,20 +7,21 @@ namespace TeamIntelligenceHub.Application.Services.ContentGeneration;
 
 /// <summary>
 /// Translates an Initiative's already-loaded, already-Initiative-scoped Contribution list
-/// into the narrow context each format's generation rule calls for.
+/// into the narrow context each format's generation rule calls for. It is the only part
+/// of this feature that touches EF entities.
 /// </summary>
-/// <remarks>
-/// The only place in this feature that touches Initiative/Contribution EF entities.
-/// Everything downstream — prompt construction, the Azure OpenAI call — sees only
-/// ContentGenerationContext, never these entities.
-///
-/// Per-type filtering (Newsletter, Blog) is done in memory over the list the caller
-/// already fetched via IContributionRepository.GetByInitiativeIdAsync, deliberately
-/// avoiding a Types.Contains(...) LINQ-to-SQL query — Types is a JSON PrimitiveCollection
-/// column with no established precedent in this codebase for that translating correctly.
-/// </remarks>
 public static class ContentGenerationContextBuilder
 {
+    /// <summary>
+    /// Returns the context the given format's rule calls for.
+    /// </summary>
+    /// <param name="format">The content format being generated.</param>
+    /// <param name="initiative">The Initiative the content is about.</param>
+    /// <param name="contributions">The Initiative's contributions, already loaded.</param>
+    /// <returns>The context holding only the fields that format uses.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown for an unsupported format.
+    /// </exception>
     public static ContentGenerationContext Build(
         ContentFormat format, Initiative initiative, IReadOnlyList<Contribution> contributions)
     {
@@ -50,12 +53,10 @@ public static class ContentGenerationContextBuilder
         };
 
     /// <summary>
-    /// "Structured data, especially AiBestPractice and team wins" is not more specific
-    /// than that in the spec. Read here as: AiPractice is the type this format actually
-    /// singles out, and Metrics/KeyTakeaways stand in for "team wins" — the same
-    /// quantifiable-and-quotable signals LinkedInPost uses. Not silently resolved: this
-    /// interpretation is called out in the Slice 2 report rather than assumed without
-    /// comment.
+    /// The spec says only "structured data, especially AiBestPractice and team wins". This
+    /// reads it as AiPractice for the named type, with Metrics/KeyTakeaways standing in for
+    /// "team wins" (the same quantifiable-and-quotable signals LinkedInPost uses). It is
+    /// an interpretation, not a stated requirement.
     /// </summary>
     private static ContentGenerationContext BuildVivaEngagePost(
         IReadOnlyList<Contribution> contributions) =>
@@ -98,7 +99,7 @@ public static class ContentGenerationContextBuilder
             InitiativeKeyObjective = initiative.KeyObjective
         };
 
-    /// <summary>Structured only — no attachment retrieval. RAG is a separate follow-up feature.</summary>
+    /// <summary>Structured only, with no attachment retrieval; document retrieval is a separate feature.</summary>
     private static ContentGenerationContext BuildBlog(
         IReadOnlyList<Contribution> contributions) =>
         new()
@@ -112,7 +113,7 @@ public static class ContentGenerationContextBuilder
                 ContributionType.ProgressUpdate)
         };
 
-    /// <summary>Structured only — no attachment retrieval. RAG is a separate follow-up feature.</summary>
+    /// <summary>Structured only, with no attachment retrieval; document retrieval is a separate feature.</summary>
     private static ContentGenerationContext BuildCaseStudy(
         IReadOnlyList<Contribution> contributions) =>
         new()

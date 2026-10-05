@@ -5,17 +5,9 @@ using TeamIntelligenceHub.Domain.Enums;
 namespace TeamIntelligenceHub.Application.DTOs;
 
 /// <summary>
-/// Payload for creating an Initiative.
+/// Payload for creating an Initiative. Length limits come from the
+/// <see cref="Initiative"/> constants; dates are nullable so [Required] can detect them.
 /// </summary>
-/// <remarks>
-/// Limits come from the <see cref="Initiative"/> constants, so a value can never pass
-/// validation here only to fail on truncation at SQL. These annotations cover shape —
-/// presence, length, range. Rules that need the database (does this owner exist, is the
-/// name taken) live in InitiativeService.
-///
-/// Dates are nullable on purpose. [Required] cannot detect an omitted non-nullable
-/// DateOnly, because model binding fills it with 0001-01-01 rather than leaving it null.
-/// </remarks>
 public class CreateInitiativeRequestDto
 {
     [Required(ErrorMessage = "Initiative Name is required.")]

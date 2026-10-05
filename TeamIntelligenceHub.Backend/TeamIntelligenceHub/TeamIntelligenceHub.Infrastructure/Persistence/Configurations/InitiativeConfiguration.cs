@@ -5,8 +5,12 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Configures the table, keys, columns, and relationships for the <see cref="Initiative"/> entity.
+/// </summary>
 public class InitiativeConfiguration : IEntityTypeConfiguration<Initiative>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Initiative> builder)
     {
         builder.ToTable("Initiatives");
@@ -52,7 +56,7 @@ public class InitiativeConfiguration : IEntityTypeConfiguration<Initiative>
             .HasMaxLength(Initiative.EnumValueMaxLength)
             .IsRequired();
 
-        // One JSON column rather than a child table — same reasoning as
+        // One JSON column rather than a child table, for the same reason as
         // Contribution.Types/Tags/ReuseTargets: no payload of its own, and role
         // assignments never need to be queried or indexed independently of the row.
         builder.PrimitiveCollection(x => x.ImpactedRoles)
@@ -98,7 +102,7 @@ public class InitiativeConfiguration : IEntityTypeConfiguration<Initiative>
             .HasColumnType("nvarchar(max)");
 
         // datetime2 stores no offset, so EF hands these back as Unspecified and they
-        // serialise without a "Z" — the browser would then read UTC as local time.
+        // serialise without a "Z", so the browser would read UTC as local time.
         // Tagging them on the way out keeps the wire format unambiguous.
         var utcKind = new ValueConverter<DateTime, DateTime>(
             value => value,

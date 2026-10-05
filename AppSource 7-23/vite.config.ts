@@ -2,19 +2,23 @@ import path from 'path';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import type { Connect, Plugin, ViteDevServer } from 'vite';
+import type { ServerResponse } from 'node:http';
 
-// Simple dev-only request logger to help debug localhost issues
-function requestLogger() {
+/** Dev-server plugin that logs each request's method and URL, for debugging localhost issues. */
+function requestLogger(): Plugin {
   return {
     name: 'vite:request-logger',
     apply: 'serve' as const,
-    configureServer(server: any) {
-      server.middlewares.use((req: any, _res: any, next: any) => {
+    configureServer(server: ViteDevServer) {
+      server.middlewares.use((req: Connect.IncomingMessage, _res: ServerResponse, next: Connect.NextFunction) => {
         try {
           const now = new Date().toISOString();
           // eslint-disable-next-line no-console
           console.log(`${now} [vite:req] ${req.method} ${req.url}`);
-        } catch (e) {}
+        } catch (e) {
+          // Logging is best-effort; a failure here must never block the request.
+        }
         return next();
       });
     },

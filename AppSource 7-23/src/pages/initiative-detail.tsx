@@ -13,12 +13,15 @@ import {
   ShieldCheck,
   Plus,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { PageHeader } from "@/components/system/PageHeader";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { deliverables } from "@/data/mock";
-import { useInitiatives } from "@/components/initiative/InitiativeContext";
 import { useInitiativeQuery, statusToLabel, focusAreaToLabel } from "@/hooks/use-initiatives-api";
+import { useInitiativeMembers } from "@/hooks/use-initiative-members";
+import { useInitiativeTasks } from "@/hooks/use-initiative-tasks";
+import { useActivityFeed } from "@/hooks/use-activity";
 import { formatDistanceToNow } from "date-fns";
 import { useAddContribution } from "@/components/contribution/ContributionContext";
 import { InitiativeTeamTab } from "@/components/initiative/InitiativeTeamTab";
@@ -28,14 +31,15 @@ import { initials, avatarColorFor } from "@/components/initiative/PeoplePicker";
 
 type Tab = "overview" | "team" | "tasks" | "activity";
 
+/**
+ * Detail screen for one initiative: header, summary strip, and Overview / Team /
+ * Tasks / Activity tabs. The initiative record, members, tasks, activity, and
+ * contributions come from the API. The Overview "Deliverables" list still reads mock
+ * data from `@/data/mock`, and progress shows 0 because the API has no progress field.
+ */
 export default function InitiativeDetailPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const {
-    teamByInitiative,
-    tasksByInitiative,
-    activityByInitiative,
-  } = useInitiatives();
   const { contributions, openAddContribution } = useAddContribution();
 
   const [tab, setTab] = useState<Tab>("overview");
@@ -43,6 +47,12 @@ export default function InitiativeDetailPage() {
   // Route ids are strings; the API keys on an int. Anything else is not ours to fetch.
   const numericId = /^\d+$/.test(id) ? Number(id) : null;
   const { data: record, isLoading, error } = useInitiativeQuery(numericId);
+  // The tabs fetch these themselves; the summary strip and tab badges read the same
+  // cached queries. The legacy InitiativeContext is not populated for API-backed
+  // initiatives.
+  const { data: team = [] } = useInitiativeMembers(numericId);
+  const { data: tasks = [] } = useInitiativeTasks(numericId);
+  const { data: activity = [] } = useActivityFeed(numericId);
 
   const initiative = useMemo(() => {
     if (!record) return undefined;
@@ -59,9 +69,6 @@ export default function InitiativeDetailPage() {
     };
   }, [record]);
 
-  const team = teamByInitiative[id] || [];
-  const tasks = tasksByInitiative[id] || [];
-  const activity = activityByInitiative[id] || [];
   const initiativeContribs = contributions.filter((c) => c.initiativeId === id);
   const items = deliverables.filter((d) => d.initiativeId === id);
 
@@ -92,7 +99,7 @@ export default function InitiativeDetailPage() {
     );
   }
 
-  const tabs: { key: Tab; label: string; icon: any; count?: number }[] = [
+  const tabs: { key: Tab; label: string; icon: LucideIcon; count?: number }[] = [
     { key: "overview", label: "Overview", icon: Rocket },
     { key: "team", label: "Team", icon: Users, count: team.length },
     { key: "tasks", label: "Tasks", icon: ListChecks, count: tasks.length },
@@ -296,7 +303,7 @@ function SummaryTile({
   value,
   tone,
 }: {
-  icon: any;
+  icon: LucideIcon;
   label: string;
   value: string | number;
   tone?: string;

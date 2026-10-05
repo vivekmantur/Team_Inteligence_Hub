@@ -1,3 +1,8 @@
+// 1. Get the activity feed for an initiative
+// 2. Post an activity to an initiative's feed
+// 3. Update an activity post
+// 4. Delete an activity post
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TeamIntelligenceHub.Application.DTOs;
@@ -7,12 +12,9 @@ using TeamIntelligenceHub.Application.Interfaces.Services;
 namespace TeamIntelligenceHub.API.Controllers;
 
 /// <summary>
-/// The activity feed for one Initiative.
+/// Handles the activity feed for one Initiative. A single post can also create a task
+/// for each person it mentions.
 /// </summary>
-/// <remarks>
-/// Posting with AutoCreateTaskEnabled raises a task for each person mentioned, so a
-/// single POST here can create several rows in Tasks. The response lists them.
-/// </remarks>
 [ApiController]
 [Authorize]
 [Route("api/initiatives/{initiativeId:int}/activity")]
@@ -21,6 +23,11 @@ public class ActivityController : ControllerBase
     private readonly IActivityService _activityService;
     private readonly ILogger<ActivityController> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ActivityController"/> class.
+    /// </summary>
+    /// <param name="activityService">The service that reads and writes activity posts.</param>
+    /// <param name="logger">The logger used to record rejected posts.</param>
     public ActivityController(
         IActivityService activityService,
         ILogger<ActivityController> logger)
@@ -29,7 +36,11 @@ public class ActivityController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>Returns the feed, newest first.</summary>
+    /// <summary>
+    /// Gets the Initiative's activity feed, newest first.
+    /// </summary>
+    /// <param name="initiativeId">The Initiative whose feed is returned.</param>
+    /// <returns>200 OK with the activity posts, or 404 Not Found when the Initiative does not exist.</returns>
     [HttpGet]
     public async Task<IActionResult> GetAll(int initiativeId)
     {
@@ -45,6 +56,12 @@ public class ActivityController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Posts an activity to the Initiative's feed, raising a task for each mentioned person when auto-create is enabled.
+    /// </summary>
+    /// <param name="initiativeId">The Initiative the activity is posted to.</param>
+    /// <param name="request">The activity message, mentioned users, and auto-create setting.</param>
+    /// <returns>201 Created with the new activity and any tasks it raised, 404 Not Found when the Initiative does not exist, 400 Bad Request when validation fails, or 401 Unauthorized when the caller cannot be identified.</returns>
     [HttpPost]
     public async Task<IActionResult> Create(
         int initiativeId,
@@ -72,6 +89,13 @@ public class ActivityController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Updates an activity post on the Initiative's feed.
+    /// </summary>
+    /// <param name="initiativeId">The Initiative that owns the activity.</param>
+    /// <param name="activityId">The activity identifier.</param>
+    /// <param name="request">The updated activity message and mentioned users.</param>
+    /// <returns>200 OK with the updated activity, 404 Not Found when the Initiative or activity does not exist, or 400 Bad Request when validation fails.</returns>
     [HttpPut("{activityId:int}")]
     public async Task<IActionResult> Update(
         int initiativeId,
@@ -96,8 +120,11 @@ public class ActivityController : ControllerBase
     }
 
     /// <summary>
-    /// Deletes the post. Tasks it raised are kept and detached from it.
+    /// Deletes the activity post. Tasks it raised are kept and detached from it.
     /// </summary>
+    /// <param name="initiativeId">The Initiative that owns the activity.</param>
+    /// <param name="activityId">The activity identifier.</param>
+    /// <returns>204 No Content when the post is deleted, 404 Not Found when the Initiative or activity does not exist, or 400 Bad Request when validation fails.</returns>
     [HttpDelete("{activityId:int}")]
     public async Task<IActionResult> Remove(int initiativeId, int activityId)
     {

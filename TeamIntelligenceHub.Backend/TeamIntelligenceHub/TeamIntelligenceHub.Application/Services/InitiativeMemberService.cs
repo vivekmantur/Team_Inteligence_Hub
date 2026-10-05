@@ -1,4 +1,9 @@
-﻿using TeamIntelligenceHub.Application.DTOs;
+﻿// 1. Get an Initiative's team
+// 2. Add a member to the team
+// 3. Update a membership
+// 4. Remove a member from the team
+
+using TeamIntelligenceHub.Application.DTOs;
 using TeamIntelligenceHub.Application.Exceptions;
 using TeamIntelligenceHub.Application.Interfaces.Repositories;
 using TeamIntelligenceHub.Application.Interfaces.Services;
@@ -6,6 +11,10 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Application.Services;
 
+/// <summary>
+/// Manages an Initiative's team memberships and reports each member's allocation across
+/// every Initiative.
+/// </summary>
 public class InitiativeMemberService : IInitiativeMemberService
 {
     /// <summary>
@@ -18,6 +27,12 @@ public class InitiativeMemberService : IInitiativeMemberService
     private readonly IInitiativeRepository _initiativeRepository;
     private readonly IUserRepository _userRepository;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InitiativeMemberService"/> class.
+    /// </summary>
+    /// <param name="memberRepository">The repository that stores memberships and totals allocations.</param>
+    /// <param name="initiativeRepository">The repository used to confirm the Initiative exists.</param>
+    /// <param name="userRepository">The repository used to look up the user being added.</param>
     public InitiativeMemberService(
         IInitiativeMemberRepository memberRepository,
         IInitiativeRepository initiativeRepository,
@@ -28,6 +43,7 @@ public class InitiativeMemberService : IInitiativeMemberService
         _userRepository = userRepository;
     }
 
+    /// <inheritdoc />
     public async Task<List<InitiativeMemberResponseDto>> GetByInitiativeAsync(
         int initiativeId)
     {
@@ -36,11 +52,16 @@ public class InitiativeMemberService : IInitiativeMemberService
         var members = await _memberRepository
             .GetByInitiativeIdAsync(initiativeId);
 
+        var totalAllocationByUserId = await _memberRepository
+            .GetTotalAllocationByUserIdsAsync(members.Select(m => m.UserId).Distinct().ToList());
+
         return members
-            .Select(MapToDto)
+            .Select(m => MapToDto(
+                m, totalAllocationByUserId.GetValueOrDefault(m.UserId)))
             .ToList();
     }
 
+    /// <inheritdoc />
     public async Task<InitiativeMemberResponseDto> AddAsync(
         int initiativeId,
         AddInitiativeMemberRequestDto request)
@@ -79,9 +100,10 @@ public class InitiativeMemberService : IInitiativeMemberService
 
         var created = await _memberRepository.AddAsync(member);
 
-        return MapToDto(created);
+        return MapToDto(created, await GetTotalAllocationAsync(userId));
     }
 
+    /// <inheritdoc />
     public async Task<InitiativeMemberResponseDto> UpdateAsync(
         int initiativeId,
         int memberId,
@@ -95,9 +117,10 @@ public class InitiativeMemberService : IInitiativeMemberService
 
         await _memberRepository.UpdateAsync(member);
 
-        return MapToDto(member);
+        return MapToDto(member, await GetTotalAllocationAsync(member.UserId));
     }
 
+    /// <inheritdoc />
     public async Task RemoveAsync(int initiativeId, int memberId)
     {
         var member = await RequireMemberAsync(initiativeId, memberId);
@@ -155,6 +178,7 @@ public class InitiativeMemberService : IInitiativeMemberService
         return trimmed;
     }
 
+    /// <summary>Accepts null, rejects values outside the allowed percentage range, and rounds to two places.</summary>
     private static decimal? RequireAllocation(decimal? allocation)
     {
         if (allocation is null)
@@ -181,7 +205,16 @@ public class InitiativeMemberService : IInitiativeMemberService
             : value.Trim();
     }
 
-    private static InitiativeMemberResponseDto MapToDto(InitiativeMember member)
+    /// <summary>Returns one user's allocation summed across every Initiative.</summary>
+    private async Task<decimal> GetTotalAllocationAsync(int userId)
+    {
+        var totals = await _memberRepository.GetTotalAllocationByUserIdsAsync([userId]);
+
+        return totals.GetValueOrDefault(userId);
+    }
+
+    private static InitiativeMemberResponseDto MapToDto(
+        InitiativeMember member, decimal totalAllocationAcrossInitiatives)
     {
         return new InitiativeMemberResponseDto
         {
@@ -193,6 +226,7 @@ public class InitiativeMemberService : IInitiativeMemberService
             Role = member.Role,
             ResponsibilityArea = member.ResponsibilityArea,
             Allocation = member.Allocation,
+            TotalAllocationAcrossInitiatives = totalAllocationAcrossInitiatives,
             JoinedAt = member.JoinedAt
         };
     }

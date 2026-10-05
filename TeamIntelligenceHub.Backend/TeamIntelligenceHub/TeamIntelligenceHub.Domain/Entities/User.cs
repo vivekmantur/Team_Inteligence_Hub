@@ -1,12 +1,20 @@
 ﻿namespace TeamIntelligenceHub.Domain.Entities;
 
+/// <summary>
+/// A person who signs in through Microsoft Entra ID, identified by EntraObjectId, along with
+/// the Initiatives, tasks, comments, posts, and contributions linked to them.
+/// </summary>
 public class User
 {
-    // Single source of truth for field limits. The EF configuration and the DTO
-    // annotations both read these, so the three cannot drift apart.
+    // Single source of truth for field limits, shared with the EF configuration and
+    // the request DTO so a value can never pass validation only to fail at SQL.
     public const int EntraObjectIdMaxLength = 100;
     public const int EmailMaxLength = 255;
     public const int DisplayNameMaxLength = 255;
+    public const int AppRoleMaxLength = 100;
+
+    /// <summary>Assigned to every user on creation; free text after that, not an enum.</summary>
+    public const string DefaultAppRole = "Contributor";
 
     public int Id { get; set; }
 
@@ -15,6 +23,12 @@ public class User
     public string Email { get; set; } = null!;
 
     public string DisplayName { get; set; } = null!;
+
+    /// <summary>
+    /// This person's role/title within the app (e.g. shown on the Team page's Skills &amp;
+    /// Expertise panel). Free text a user sets for themselves, not a permissions level.
+    /// </summary>
+    public string AppRole { get; set; } = DefaultAppRole;
 
     public bool IsActive { get; set; }
 

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 
+/** Bell button with unread badge that opens a dropdown of notifications; clicking one marks it read and opens its Initiative. */
 export function NotificationsBell() {
   const { notifications, unreadCount, markNotificationRead, markAllNotificationsRead } = useInitiatives();
   const [open, setOpen] = useState(false);

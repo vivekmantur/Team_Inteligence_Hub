@@ -74,6 +74,7 @@ function statusIcon(s: TaskStatus) {
   }
 }
 
+/** Tasks tab for an Initiative: API-backed task list with a status filter, a create form, and the task detail and delete dialogs. */
 export function InitiativeTasksTab({ initiativeId }: Props) {
   const {
     commentsByTask,

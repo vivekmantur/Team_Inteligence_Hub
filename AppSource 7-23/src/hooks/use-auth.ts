@@ -4,6 +4,7 @@ import { useIsAuthenticated, useMsal } from "@azure/msal-react";
 import { isAuthConfigured, loginRequest, signUpRequest } from "@/lib/auth-config";
 import { queryClient } from "@/lib/query-client";
 
+/** The signed-in user's profile, read from the active MSAL account and its ID token claims. */
 export type CurrentUser = {
   name: string;
   email: string;
@@ -12,6 +13,7 @@ export type CurrentUser = {
   objectId?: string;
 };
 
+/** Builds up to two uppercase initials from the name, or the email when the name is blank. */
 function toInitials(name: string, email: string): string {
   const source = name.trim() || email.trim();
   if (!source) return "?";

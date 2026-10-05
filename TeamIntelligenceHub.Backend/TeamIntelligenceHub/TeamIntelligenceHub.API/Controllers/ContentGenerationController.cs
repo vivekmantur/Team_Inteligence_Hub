@@ -1,3 +1,5 @@
+// 1. Generate Content Studio output for an initiative
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TeamIntelligenceHub.Application.DTOs;
@@ -8,14 +10,9 @@ namespace TeamIntelligenceHub.API.Controllers;
 
 /// <summary>
 /// Generates Content Studio output (LinkedIn Post, Newsletter, Blog, and so on) grounded
-/// on one Initiative's own data.
+/// on one Initiative's own data. It is its own controller because it depends on the
+/// chat-completion provider rather than CRUD concerns.
 /// </summary>
-/// <remarks>
-/// Separate from InitiativesController on purpose: this depends on the Azure OpenAI chat
-/// client rather than InitiativesController's CRUD concerns, the same reason
-/// CopilotController is its own controller rather than living on Initiatives or
-/// Contributions.
-/// </remarks>
 [ApiController]
 [Authorize]
 [Route("api/initiatives/{initiativeId:int}/content-generation")]
@@ -24,6 +21,11 @@ public class ContentGenerationController : ControllerBase
     private readonly IContentGenerationService _contentGenerationService;
     private readonly ILogger<ContentGenerationController> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ContentGenerationController"/> class.
+    /// </summary>
+    /// <param name="contentGenerationService">The service that builds the prompt and calls the chat-completion provider.</param>
+    /// <param name="logger">The logger used to record rejected requests and provider failures.</param>
     public ContentGenerationController(
         IContentGenerationService contentGenerationService,
         ILogger<ContentGenerationController> logger)
@@ -32,6 +34,13 @@ public class ContentGenerationController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Generates content in the requested format for the Initiative.
+    /// </summary>
+    /// <param name="initiativeId">The Initiative whose data grounds the generated content.</param>
+    /// <param name="request">The output format, tone, audience, length, and other settings for the generated content.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>200 OK with the generated content, 404 Not Found when the Initiative does not exist, 400 Bad Request when validation fails, or 502 Bad Gateway when the provider fails.</returns>
     [HttpPost]
     public async Task<IActionResult> Generate(
         int initiativeId,

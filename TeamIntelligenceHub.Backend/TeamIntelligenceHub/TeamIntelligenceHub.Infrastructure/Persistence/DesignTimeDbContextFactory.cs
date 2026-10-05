@@ -5,16 +5,19 @@ using Microsoft.Extensions.Configuration;
 namespace TeamIntelligenceHub.Infrastructure.Persistence;
 
 /// <summary>
-/// Builds the context for `dotnet ef` / Package Manager Console.
+/// Builds the context for `dotnet ef` / Package Manager Console. It reads only the
+/// connection string, so migrations do not depend on the API's Entra settings.
 /// </summary>
-/// <remarks>
-/// Without this, EF constructs the context by running the API's Program.cs, which means
-/// migrations fail whenever the Entra settings are absent — unrelated to the database.
-/// This reads only what a migration actually needs: the connection string.
-/// </remarks>
 public class DesignTimeDbContextFactory
     : IDesignTimeDbContextFactory<TeamIntelligenceHubDbContext>
 {
+    /// <summary>
+    /// Creates a context for the design-time tools, reading the connection string from the API
+    /// project's configuration, user secrets, and environment variables.
+    /// </summary>
+    /// <param name="args">The arguments passed by the design-time tools; not used.</param>
+    /// <returns>A <see cref="TeamIntelligenceHubDbContext"/> connected to the configured SQL Server database.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when ConnectionStrings:DefaultConnection is not set.</exception>
     public TeamIntelligenceHubDbContext CreateDbContext(string[] args)
     {
         var apiProjectPath = Path.GetFullPath(

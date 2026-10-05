@@ -1,5 +1,6 @@
 ﻿namespace TeamIntelligenceHub.Application.DTOs;
 
+/// <summary>One person's membership on an Initiative's team.</summary>
 public class InitiativeMemberResponseDto
 {
     public int Id { get; set; }
@@ -17,6 +18,12 @@ public class InitiativeMemberResponseDto
     public string? ResponsibilityArea { get; set; }
 
     public decimal? Allocation { get; set; }
+
+    /// <summary>
+    /// This person's Allocation summed across every Initiative they belong to, not just
+    /// this one — untracked rows count as 0, never as unknown.
+    /// </summary>
+    public decimal TotalAllocationAcrossInitiatives { get; set; }
 
     public DateTime JoinedAt { get; set; }
 }

@@ -5,8 +5,12 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Configures the table, keys, columns, and relationships for the <see cref="TaskComment"/> entity.
+/// </summary>
 public class TaskCommentConfiguration : IEntityTypeConfiguration<TaskComment>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<TaskComment> builder)
     {
         builder.ToTable("TaskComments");
@@ -61,7 +65,7 @@ public class TaskCommentConfiguration : IEntityTypeConfiguration<TaskComment>
             .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // SQL Server forbids cascade on a self-referencing key — it would be a cycle.
+        // SQL Server forbids cascade on a self-referencing key, since it would be a cycle.
         // Deleting a comment that has replies is therefore blocked at the database, and
         // the service removes replies first.
         builder.HasOne(x => x.ParentComment)

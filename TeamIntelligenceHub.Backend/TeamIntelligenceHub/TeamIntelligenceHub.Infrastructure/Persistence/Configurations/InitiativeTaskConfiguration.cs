@@ -5,9 +5,13 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Configures the table, keys, columns, and relationships for the <see cref="InitiativeTask"/> entity.
+/// </summary>
 public class InitiativeTaskConfiguration
     : IEntityTypeConfiguration<InitiativeTask>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<InitiativeTask> builder)
     {
         // Table name follows the schema diagram; only the C# type is renamed.
@@ -46,7 +50,7 @@ public class InitiativeTaskConfiguration
             .IsRequired();
 
         // datetime2 stores no offset, so EF hands these back as Unspecified and they
-        // serialise without a "Z" — the browser would then read UTC as local time.
+        // serialise without a "Z", so the browser would read UTC as local time.
         var utcKind = new ValueConverter<DateTime, DateTime>(
             value => value,
             value => DateTime.SpecifyKind(value, DateTimeKind.Utc));

@@ -7,6 +7,7 @@ interface PageHeaderProps {
   actions?: ReactNode;
 }
 
+/** Standard page heading with optional eyebrow text, description, and right-aligned action buttons. */
 export function PageHeader({ eyebrow, title, description, actions }: PageHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">

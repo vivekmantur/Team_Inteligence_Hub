@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as d3 from "d3";
 
+/** One line in a LineChart: legend name, stroke color, and one value per label. */
 export interface Series {
   name: string;
   color: string;
@@ -13,6 +14,7 @@ interface LineChartProps {
   height?: number;
 }
 
+/** Multi-series d3 line chart with shaded areas, point markers, and a color legend below. */
 export function LineChart({ labels, series, height = 260 }: LineChartProps) {
   const ref = useRef<SVGSVGElement | null>(null);
 
@@ -39,19 +41,19 @@ export function LineChart({ labels, series, height = 260 }: LineChartProps) {
     // grid
     g.append("g")
       .attr("class", "grid")
-      .call(d3.axisLeft(y).ticks(4).tickSize(-iw).tickFormat(() => "") as any)
+      .call(d3.axisLeft(y).ticks(4).tickSize(-iw).tickFormat(() => ""))
       .call((sel) => sel.select(".domain").remove())
       .call((sel) => sel.selectAll("line").attr("stroke", "currentColor").attr("opacity", 0.08));
 
     // axes
     g.append("g")
       .attr("transform", `translate(0,${ih})`)
-      .call(d3.axisBottom(x).tickFormat((i) => labels[i as number]) as any)
+      .call(d3.axisBottom(x).tickFormat((i) => labels[i as number]))
       .call((sel) => sel.select(".domain").remove())
       .call((sel) => sel.selectAll("text").attr("fill", "currentColor").attr("font-size", 10).attr("opacity", 0.6));
 
     g.append("g")
-      .call(d3.axisLeft(y).ticks(4).tickFormat((d) => d3.format(".2s")(d as number)) as any)
+      .call(d3.axisLeft(y).ticks(4).tickFormat((d) => d3.format(".2s")(d as number)))
       .call((sel) => sel.select(".domain").remove())
       .call((sel) => sel.selectAll("line").remove())
       .call((sel) => sel.selectAll("text").attr("fill", "currentColor").attr("font-size", 10).attr("opacity", 0.6));
@@ -76,7 +78,7 @@ export function LineChart({ labels, series, height = 260 }: LineChartProps) {
         .y1((d) => y(d))
         .curve(d3.curveMonotoneX);
 
-      g.append("path").datum(s.values).attr("d", area as any).attr("fill", `url(#${gradId})`);
+      g.append("path").datum(s.values).attr("d", area).attr("fill", `url(#${gradId})`);
       g.append("path")
         .datum(s.values)
         .attr("d", line)

@@ -1,4 +1,8 @@
-﻿using TeamIntelligenceHub.Application.DTOs;
+﻿// 1. Upload a file to a contribution
+// 2. Download a contribution attachment
+// 3. Delete a contribution attachment
+
+using TeamIntelligenceHub.Application.DTOs;
 using TeamIntelligenceHub.Application.Exceptions;
 using TeamIntelligenceHub.Application.Interfaces;
 using TeamIntelligenceHub.Application.Interfaces.Repositories;
@@ -7,6 +11,10 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Application.Services;
 
+/// <summary>
+/// Stores, serves, and removes files attached to contributions, and queues each new
+/// upload for document extraction.
+/// </summary>
 public class ContributionAttachmentService : IContributionAttachmentService
 {
     /// <summary>
@@ -27,21 +35,34 @@ public class ContributionAttachmentService : IContributionAttachmentService
     private readonly IUserRepository _userRepository;
     private readonly ICurrentUserService _currentUserService;
     private readonly IFileStorage _fileStorage;
+    private readonly IDocumentInsightExtractionQueue _extractionQueue;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ContributionAttachmentService"/> class.
+    /// </summary>
+    /// <param name="attachmentRepository">The repository that stores attachment rows.</param>
+    /// <param name="contributionRepository">The repository used to load the owning contribution.</param>
+    /// <param name="userRepository">The repository used to resolve the caller.</param>
+    /// <param name="currentUserService">The service that exposes the signed-in caller's identity.</param>
+    /// <param name="fileStorage">The store that holds the file bytes.</param>
+    /// <param name="extractionQueue">The queue that hands new uploads off for document extraction.</param>
     public ContributionAttachmentService(
         IContributionAttachmentRepository attachmentRepository,
         IContributionRepository contributionRepository,
         IUserRepository userRepository,
         ICurrentUserService currentUserService,
-        IFileStorage fileStorage)
+        IFileStorage fileStorage,
+        IDocumentInsightExtractionQueue extractionQueue)
     {
         _attachmentRepository = attachmentRepository;
         _contributionRepository = contributionRepository;
         _userRepository = userRepository;
         _currentUserService = currentUserService;
         _fileStorage = fileStorage;
+        _extractionQueue = extractionQueue;
     }
 
+    /// <inheritdoc />
     public async Task<ContributionAttachmentDto> UploadAsync(
         int contributionId,
         FileUpload upload,
@@ -92,6 +113,8 @@ public class ContributionAttachmentService : IContributionAttachmentService
                     CreatedAt = DateTime.UtcNow
                 });
 
+            await _extractionQueue.EnqueueAsync(attachment.Id, cancellationToken);
+
             return MapToDto(attachment);
         }
         catch
@@ -104,6 +127,7 @@ public class ContributionAttachmentService : IContributionAttachmentService
         }
     }
 
+    /// <inheritdoc />
     public async Task<FileDownload> DownloadAsync(
         int contributionId,
         int attachmentId,
@@ -119,6 +143,7 @@ public class ContributionAttachmentService : IContributionAttachmentService
         return new FileDownload(content, attachment.FileName, attachment.ContentType);
     }
 
+    /// <inheritdoc />
     public async Task RemoveAsync(
         int contributionId,
         int attachmentId,
@@ -173,6 +198,7 @@ public class ContributionAttachmentService : IContributionAttachmentService
         return attachment;
     }
 
+    /// <summary>Resolves the signed-in caller to their local user row.</summary>
     private async Task<User> GetCallerAsync()
     {
         var entraObjectId = _currentUserService.EntraObjectId;
@@ -187,6 +213,7 @@ public class ContributionAttachmentService : IContributionAttachmentService
                 "Your profile has not been created yet. Reload the app and try again.");
     }
 
+    /// <summary>Reduces the name to its leaf and rejects blank, overlong, or blocked names.</summary>
     private static string ValidateFileName(string? fileName)
     {
         if (string.IsNullOrWhiteSpace(fileName))

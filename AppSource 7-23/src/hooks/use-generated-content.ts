@@ -13,6 +13,11 @@ function emit() {
   listeners.forEach((l) => l());
 }
 
+/**
+ * Subscribes to the in-memory list of generated content, seeded from mock data, and
+ * returns it with an `add` function that prepends a new item and notifies subscribers.
+ * Nothing is persisted, so the list resets on page refresh.
+ */
 export function useGeneratedContent() {
   const subscribe = useCallback((cb: () => void) => {
     listeners.add(cb);

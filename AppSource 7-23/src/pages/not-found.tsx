@@ -1,3 +1,4 @@
+/** Static 404 screen for unmatched routes. */
 export default function NotFoundPage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">

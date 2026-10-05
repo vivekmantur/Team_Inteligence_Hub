@@ -1,3 +1,8 @@
+// 1. Get all posts on an Initiative's feed
+// 2. Create a post and raise tasks for mentioned people
+// 3. Update a post
+// 4. Delete a post
+
 using TeamIntelligenceHub.Application.DTOs;
 using TeamIntelligenceHub.Application.Exceptions;
 using TeamIntelligenceHub.Application.Interfaces;
@@ -7,6 +12,10 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Application.Services;
 
+/// <summary>
+/// Manages posts on an Initiative's activity feed, including their mentions and the
+/// tasks a post can raise for the people it mentions.
+/// </summary>
 public class ActivityService : IActivityService
 {
     /// <summary>
@@ -21,6 +30,14 @@ public class ActivityService : IActivityService
     private readonly IUserRepository _userRepository;
     private readonly ICurrentUserService _currentUserService;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ActivityService"/> class.
+    /// </summary>
+    /// <param name="activityRepository">The repository that stores posts and their mentions.</param>
+    /// <param name="initiativeRepository">The repository used to confirm the Initiative exists.</param>
+    /// <param name="taskService">The service that raises tasks for mentioned people.</param>
+    /// <param name="userRepository">The repository used to resolve the caller and mentioned users.</param>
+    /// <param name="currentUserService">The service that exposes the signed-in caller's identity.</param>
     public ActivityService(
         IActivityRepository activityRepository,
         IInitiativeRepository initiativeRepository,
@@ -35,6 +52,7 @@ public class ActivityService : IActivityService
         _currentUserService = currentUserService;
     }
 
+    /// <inheritdoc />
     public async Task<List<ActivityResponseDto>> GetByInitiativeAsync(int initiativeId)
     {
         await RequireInitiativeAsync(initiativeId);
@@ -46,6 +64,7 @@ public class ActivityService : IActivityService
             .ToList();
     }
 
+    /// <inheritdoc />
     public async Task<ActivityResponseDto> CreateAsync(
         int initiativeId,
         CreateActivityRequestDto request)
@@ -79,6 +98,7 @@ public class ActivityService : IActivityService
         return await ReloadAsync(created.Id);
     }
 
+    /// <inheritdoc />
     public async Task<ActivityResponseDto> UpdateAsync(
         int initiativeId,
         int activityId,
@@ -107,6 +127,7 @@ public class ActivityService : IActivityService
         return await ReloadAsync(activity.Id);
     }
 
+    /// <inheritdoc />
     public async Task RemoveAsync(int initiativeId, int activityId)
     {
         var activity = await RequireActivityAsync(initiativeId, activityId);
@@ -195,6 +216,7 @@ public class ActivityService : IActivityService
         return distinct;
     }
 
+    /// <summary>Resolves the signed-in caller to their local user row.</summary>
     private async Task<User> GetCallerAsync()
     {
         var entraObjectId = _currentUserService.EntraObjectId;
@@ -209,6 +231,7 @@ public class ActivityService : IActivityService
                 "Your profile has not been created yet. Reload the app and try again.");
     }
 
+    /// <summary>Reloads the post so its author, mentions, and raised tasks are populated.</summary>
     private async Task<ActivityResponseDto> ReloadAsync(int activityId)
     {
         var activity = await _activityRepository.GetByIdAsync(activityId)

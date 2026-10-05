@@ -10,13 +10,8 @@ namespace TeamIntelligenceHub.Application.DTOs;
 
 /// <summary>
 /// Payload for creating a contribution. Carries the whole graph, because the wizard
-/// submits all eight of its steps at once.
+/// submits all eight of its steps at once; files are uploaded separately afterwards.
 /// </summary>
-/// <remarks>
-/// The Initiative comes from the route and the submitter from the bearer token, so
-/// neither can be spoofed by the body. Attachments are not here: a file needs a
-/// ContributionId to hang off, so it is uploaded after this call returns.
-/// </remarks>
 public class CreateContributionRequestDto
 {
     [Required(ErrorMessage = "Title is required.")]
@@ -77,20 +72,19 @@ public class CreateContributionRequestDto
     public ContributionAiPracticeRequestDto? AiPractice { get; set; }
 
     public ContributionCustomerStoryRequestDto? CustomerStory { get; set; }
+
+    public ContributionTestimonialRequestDto? Testimonial { get; set; }
 }
 
 /// <summary>
-/// Payload for editing a contribution. Replaces the whole graph, matching the wizard,
-/// which reopens every step rather than patching one field.
+/// Payload for editing a contribution. Replaces the whole graph, matching the wizard;
+/// attachments are managed through their own endpoints.
 /// </summary>
-/// <remarks>
-/// Attachments are excluded and managed through their own endpoints, the same split
-/// task comments use.
-/// </remarks>
 public class UpdateContributionRequestDto : CreateContributionRequestDto
 {
 }
 
+/// <summary>A person credited on a contribution, as sent by the client.</summary>
 public class ContributionContributorRequestDto
 {
     [Range(1, int.MaxValue, ErrorMessage = "Contributor is not a valid user.")]
@@ -105,6 +99,7 @@ public class ContributionContributorRequestDto
     public bool IsPrimary { get; set; }
 }
 
+/// <summary>An external link attached to a contribution as evidence.</summary>
 public class ContributionLinkRequestDto
 {
     public ContributionLinkSource Source { get; set; }
@@ -126,6 +121,7 @@ public class ContributionLinkRequestDto
     public string? Description { get; set; }
 }
 
+/// <summary>The business metric section of a contribution.</summary>
 public class ContributionMetricRequestDto
 {
     [Required(ErrorMessage = "Metric name is required.")]
@@ -150,6 +146,7 @@ public class ContributionMetricRequestDto
     public string? ReportingPeriod { get; set; }
 }
 
+/// <summary>The risk section of a contribution.</summary>
 public class ContributionRiskRequestDto
 {
     [Required(ErrorMessage = "Risk description is required.")]
@@ -177,6 +174,7 @@ public class ContributionRiskRequestDto
     public DateOnly? TargetResolutionDate { get; set; }
 }
 
+/// <summary>The AI best practice section of a contribution.</summary>
 public class ContributionAiPracticeRequestDto
 {
     [Required(ErrorMessage = "AI tool is required.")]
@@ -197,6 +195,7 @@ public class ContributionAiPracticeRequestDto
     public string? Recommendation { get; set; }
 }
 
+/// <summary>The customer story section of a contribution.</summary>
 public class ContributionCustomerStoryRequestDto
 {
     [Required(ErrorMessage = "Customer name is required.")]
@@ -218,10 +217,36 @@ public class ContributionCustomerStoryRequestDto
     public string? BusinessValue { get; set; }
 }
 
+/// <summary>The testimonial section of a contribution.</summary>
+public class ContributionTestimonialRequestDto
+{
+    [Required(ErrorMessage = "Quote is required.")]
+    [StringLength(
+        ContributionTestimonial.QuoteMaxLength,
+        ErrorMessage = "Quote cannot exceed {1} characters.")]
+    public string Quote { get; set; } = null!;
+
+    [Required(ErrorMessage = "Speaker name is required.")]
+    [StringLength(
+        ContributionTestimonial.SpeakerNameMaxLength,
+        ErrorMessage = "Speaker name cannot exceed {1} characters.")]
+    public string SpeakerName { get; set; } = null!;
+
+    [StringLength(ContributionTestimonial.SpeakerRoleMaxLength)]
+    public string? SpeakerRole { get; set; }
+
+    /// <summary>Defaults to Stakeholder when omitted.</summary>
+    public TestimonialAudience? Audience { get; set; }
+
+    /// <summary>Defaults to Positive when omitted.</summary>
+    public TestimonialSentiment? Sentiment { get; set; }
+}
+
 // ---------------------------------------------------------------------------
 // Responses
 // ---------------------------------------------------------------------------
 
+/// <summary>One contribution with its whole graph: credited people, links, attachments, and detail sections.</summary>
 public class ContributionResponseDto
 {
     public int Id { get; set; }
@@ -275,8 +300,11 @@ public class ContributionResponseDto
     public ContributionAiPracticeDto? AiPractice { get; set; }
 
     public ContributionCustomerStoryDto? CustomerStory { get; set; }
+
+    public ContributionTestimonialDto? Testimonial { get; set; }
 }
 
+/// <summary>A person credited on a contribution.</summary>
 public class ContributionContributorDto
 {
     public int Id { get; set; }
@@ -292,6 +320,7 @@ public class ContributionContributorDto
     public DateTime AddedAt { get; set; }
 }
 
+/// <summary>An external link attached to a contribution.</summary>
 public class ContributionLinkDto
 {
     public int Id { get; set; }
@@ -307,6 +336,7 @@ public class ContributionLinkDto
     public DateTime CreatedAt { get; set; }
 }
 
+/// <summary>Metadata for a file attached to a contribution.</summary>
 public class ContributionAttachmentDto
 {
     public int Id { get; set; }
@@ -323,6 +353,7 @@ public class ContributionAttachmentDto
     public DateTime CreatedAt { get; set; }
 }
 
+/// <summary>The business metric section of a contribution.</summary>
 public class ContributionMetricDto
 {
     public string MetricName { get; set; } = null!;
@@ -336,6 +367,7 @@ public class ContributionMetricDto
     public string? ReportingPeriod { get; set; }
 }
 
+/// <summary>The risk section of a contribution, with the owner's display name.</summary>
 public class ContributionRiskDto
 {
     public string Description { get; set; } = null!;
@@ -355,6 +387,7 @@ public class ContributionRiskDto
     public DateOnly? TargetResolutionDate { get; set; }
 }
 
+/// <summary>The AI best practice section of a contribution.</summary>
 public class ContributionAiPracticeDto
 {
     public string Tool { get; set; } = null!;
@@ -368,6 +401,7 @@ public class ContributionAiPracticeDto
     public string? Recommendation { get; set; }
 }
 
+/// <summary>The customer story section of a contribution.</summary>
 public class ContributionCustomerStoryDto
 {
     public string CustomerName { get; set; } = null!;
@@ -379,4 +413,134 @@ public class ContributionCustomerStoryDto
     public string? Quote { get; set; }
 
     public string? BusinessValue { get; set; }
+}
+
+/// <summary>The testimonial section of a contribution.</summary>
+public class ContributionTestimonialDto
+{
+    public string Quote { get; set; } = null!;
+
+    public string SpeakerName { get; set; } = null!;
+
+    public string? SpeakerRole { get; set; }
+
+    public TestimonialAudience Audience { get; set; }
+
+    public TestimonialSentiment Sentiment { get; set; }
+}
+
+/// <summary>
+/// One card on the Stories &amp; Evidence page. Slimmer than ContributionResponseDto: a
+/// showcase grid has no use for contributors, links, attachments, or the other four
+/// detail sections, so this only carries what the card renders.
+/// </summary>
+public class CustomerStoryCardDto
+{
+    public int Id { get; set; }
+
+    public int InitiativeId { get; set; }
+
+    public string InitiativeName { get; set; } = null!;
+
+    public int SubmittedByUserId { get; set; }
+
+    public string Title { get; set; } = null!;
+
+    public string? KeyTakeaway { get; set; }
+
+    public DateTime? SubmittedAt { get; set; }
+
+    public string CustomerName { get; set; } = null!;
+
+    public string? Summary { get; set; }
+
+    public string? Outcome { get; set; }
+
+    public string? Quote { get; set; }
+
+    public string? BusinessValue { get; set; }
+}
+
+/// <summary>
+/// One card on the Stories &amp; Evidence page's Testimonial tab. Slimmer than
+/// ContributionResponseDto, on the same reasoning as CustomerStoryCardDto.
+/// </summary>
+public class TestimonialCardDto
+{
+    public int Id { get; set; }
+
+    public int InitiativeId { get; set; }
+
+    public string InitiativeName { get; set; } = null!;
+
+    public int SubmittedByUserId { get; set; }
+
+    public DateTime? SubmittedAt { get; set; }
+
+    public string Quote { get; set; } = null!;
+
+    public string SpeakerName { get; set; } = null!;
+
+    public string? SpeakerRole { get; set; }
+
+    public TestimonialAudience Audience { get; set; }
+
+    public TestimonialSentiment Sentiment { get; set; }
+}
+
+/// <summary>
+/// One card on the Stories &amp; Evidence page's "Extracted from documents" section,
+/// customer-story half. Sourced from DocumentTestimonialsAndCustomerStories rather than a
+/// Contribution's own CustomerStory row, so it carries the source attachment's file name
+/// instead of a contributor-written Title.
+/// </summary>
+public class DocumentCustomerStoryCardDto
+{
+    public int Id { get; set; }
+
+    public int ContributionId { get; set; }
+
+    public int InitiativeId { get; set; }
+
+    public string InitiativeName { get; set; } = null!;
+
+    public string SourceFileName { get; set; } = null!;
+
+    public string? CustomerName { get; set; }
+
+    public string? Summary { get; set; }
+
+    public string? Outcome { get; set; }
+
+    public string? Quote { get; set; }
+
+    public string? BusinessValue { get; set; }
+}
+
+/// <summary>
+/// One card on the Stories &amp; Evidence page's "Extracted from documents" section,
+/// testimonial half. See DocumentCustomerStoryCardDto for why this is separate from
+/// TestimonialCardDto.
+/// </summary>
+public class DocumentTestimonialCardDto
+{
+    public int Id { get; set; }
+
+    public int ContributionId { get; set; }
+
+    public int InitiativeId { get; set; }
+
+    public string InitiativeName { get; set; } = null!;
+
+    public string SourceFileName { get; set; } = null!;
+
+    public string? Quote { get; set; }
+
+    public string? SpeakerName { get; set; }
+
+    public string? SpeakerRole { get; set; }
+
+    public TestimonialAudience? Audience { get; set; }
+
+    public TestimonialSentiment? Sentiment { get; set; }
 }

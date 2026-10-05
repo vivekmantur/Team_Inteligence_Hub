@@ -44,6 +44,11 @@ const highlights = [
   },
 ];
 
+/**
+ * Sign-in screen with a product story panel and Microsoft sign-in / sign-up buttons
+ * through the auth provider. It redirects to the original route once authenticated. No
+ * API or mock data.
+ */
 export default function LoginPage() {
   const location = useLocation();
   const { isAuthenticated, isReady, isInteracting, error, clearError, signIn, signUp } = useAuth();

@@ -7,8 +7,13 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useAddContribution } from "@/components/contribution/ContributionContext";
 
+/**
+ * Team contributions screen: searchable recent contributions, a per-Initiative breakdown,
+ * and team member cards. Contributions come from the real API. The Initiative filter
+ * options, team member cards, and deliverables counts are mock data from `@/data/mock`.
+ */
 export default function TeamPage() {
-  const { openAddContribution, contributions } = useAddContribution();
+  const { openAddContribution, openEditContribution, contributions } = useAddContribution();
   const [initiativeFilter, setInitiativeFilter] = useState<string>("All");
   const [q, setQ] = useState("");
 
@@ -96,7 +101,12 @@ export default function TeamPage() {
             </div>
             <div className="mt-3 grid md:grid-cols-2 gap-3">
               {filteredContributions.slice(0, 8).map((c) => (
-                <div key={c.id} className="rounded-xl bg-white/80 border border-black/5 p-3">
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => openEditContribution(c.id)}
+                  className="w-full text-left rounded-xl bg-white/80 border border-black/5 p-3 hover:border-indigo-200 hover:shadow-sm transition-all"
+                >
                   <div className="flex items-center gap-2">
                     <div className="size-7 rounded-lg bg-copilot-gradient grid place-items-center text-white">
                       <CheckCircle2 className="size-3.5" />
@@ -115,7 +125,7 @@ export default function TeamPage() {
                     <span className="inline-flex items-center gap-1"><Paperclip className="size-3" />{c.files.length + c.links.length}</span>
                     <span className="inline-flex items-center gap-1"><FileText className="size-3" />{c.types.length} type{c.types.length === 1 ? "" : "s"}</span>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </section>

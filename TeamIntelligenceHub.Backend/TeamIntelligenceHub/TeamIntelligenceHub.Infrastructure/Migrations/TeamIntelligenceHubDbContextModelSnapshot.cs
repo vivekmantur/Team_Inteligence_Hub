@@ -399,6 +399,99 @@ namespace TeamIntelligenceHub.Infrastructure.Migrations
                     b.ToTable("ContributionRisks", (string)null);
                 });
 
+            modelBuilder.Entity("TeamIntelligenceHub.Domain.Entities.ContributionTestimonial", b =>
+                {
+                    b.Property<int>("ContributionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Audience")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Quote")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Sentiment")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("SpeakerName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("SpeakerRole")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("ContributionId");
+
+                    b.ToTable("ContributionTestimonials", (string)null);
+                });
+
+            modelBuilder.Entity("TeamIntelligenceHub.Domain.Entities.DocumentTestimonialAndCustomerStory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Audience")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("BusinessValue")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("ContributionAttachmentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CustomerName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Outcome")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("Quote")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Sentiment")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("SpeakerName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("SpeakerRole")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Summary")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContributionAttachmentId");
+
+                    b.ToTable("DocumentTestimonialsAndCustomerStories", (string)null);
+                });
+
             modelBuilder.Entity("TeamIntelligenceHub.Domain.Entities.Initiative", b =>
                 {
                     b.Property<int>("Id")
@@ -708,6 +801,13 @@ namespace TeamIntelligenceHub.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AppRole")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasDefaultValue("Contributor");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -889,6 +989,28 @@ namespace TeamIntelligenceHub.Infrastructure.Migrations
                     b.Navigation("OwnerUser");
                 });
 
+            modelBuilder.Entity("TeamIntelligenceHub.Domain.Entities.ContributionTestimonial", b =>
+                {
+                    b.HasOne("TeamIntelligenceHub.Domain.Entities.Contribution", "Contribution")
+                        .WithOne("Testimonial")
+                        .HasForeignKey("TeamIntelligenceHub.Domain.Entities.ContributionTestimonial", "ContributionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Contribution");
+                });
+
+            modelBuilder.Entity("TeamIntelligenceHub.Domain.Entities.DocumentTestimonialAndCustomerStory", b =>
+                {
+                    b.HasOne("TeamIntelligenceHub.Domain.Entities.ContributionAttachment", "ContributionAttachment")
+                        .WithMany()
+                        .HasForeignKey("ContributionAttachmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ContributionAttachment");
+                });
+
             modelBuilder.Entity("TeamIntelligenceHub.Domain.Entities.Initiative", b =>
                 {
                     b.HasOne("TeamIntelligenceHub.Domain.Entities.User", "ExecutiveSponsor")
@@ -1037,6 +1159,8 @@ namespace TeamIntelligenceHub.Infrastructure.Migrations
                     b.Navigation("Metric");
 
                     b.Navigation("Risk");
+
+                    b.Navigation("Testimonial");
                 });
 
             modelBuilder.Entity("TeamIntelligenceHub.Domain.Entities.Initiative", b =>

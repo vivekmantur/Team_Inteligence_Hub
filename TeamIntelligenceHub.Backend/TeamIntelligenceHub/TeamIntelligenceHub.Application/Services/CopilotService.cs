@@ -1,3 +1,5 @@
+// 1. Answer a question grounded on the indexed content
+
 using System.Text;
 using System.Text.RegularExpressions;
 using TeamIntelligenceHub.Application.DTOs;
@@ -14,6 +16,9 @@ namespace TeamIntelligenceHub.Application.Services;
 /// </summary>
 public class CopilotService : ICopilotService
 {
+    /// <summary>
+    /// The longest question, in characters, that <see cref="AskAsync"/> accepts.
+    /// </summary>
     public const int QuestionMaxLength = 2000;
 
     /// <summary>
@@ -23,6 +28,7 @@ public class CopilotService : ICopilotService
     /// </summary>
     private const string NoRelevantDataMarker = "NO_RELEVANT_DATA";
 
+    /// <summary>The rules the chat model answers under: ground on the context, and report conflicting values.</summary>
     private const string SystemPrompt =
         "You are the Copilot assistant for Team Intelligence Hub. Answer the user's " +
         "question using only the context provided below. If the context does not " +
@@ -37,10 +43,12 @@ public class CopilotService : ICopilotService
         "concrete reason to (e.g. a stated methodology or explicit recency) — never " +
         "from assumption alone.";
 
+    /// <summary>The answer shown ahead of the suggested questions when nothing relevant was found.</summary>
     private const string NoDataFoundMessage =
         "I couldn't find anything relevant to that in the indexed content. Try one of " +
         "these instead:";
 
+    /// <summary>The rules for the follow-up call that proposes better phrasings of the question.</summary>
     private const string SuggestQuestionsSystemPrompt =
         "You help people ask better questions of a knowledge base about team " +
         "initiatives, contributions, and adoption metrics. A question could not be " +
@@ -53,6 +61,12 @@ public class CopilotService : ICopilotService
     private readonly IVectorSearchClient _searchClient;
     private readonly IChatCompletionClient _chatClient;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CopilotService"/> class.
+    /// </summary>
+    /// <param name="embeddingClient">The client that embeds the question.</param>
+    /// <param name="searchClient">The client that finds the nearest indexed chunks.</param>
+    /// <param name="chatClient">The chat model client that writes the answer and suggestions.</param>
     public CopilotService(
         IEmbeddingClient embeddingClient,
         IVectorSearchClient searchClient,
@@ -63,6 +77,7 @@ public class CopilotService : ICopilotService
         _chatClient = chatClient;
     }
 
+    /// <inheritdoc />
     public async Task<CopilotAnswerDto> AskAsync(
         string question,
         CancellationToken cancellationToken = default)
@@ -71,7 +86,8 @@ public class CopilotService : ICopilotService
 
         var queryVector = await _embeddingClient.EmbedAsync(question, cancellationToken);
 
-        var chunks = await _searchClient.SearchAsync(queryVector, cancellationToken);
+        var chunks = await _searchClient.SearchAsync(
+            queryVector, cancellationToken: cancellationToken);
 
         var userPrompt = BuildPrompt(question, chunks);
 
@@ -103,6 +119,7 @@ public class CopilotService : ICopilotService
         };
     }
 
+    /// <summary>Checks whether the model answered with the no-relevant-data marker.</summary>
     private static bool IsNoRelevantData(string answer) =>
         answer.Trim().Equals(NoRelevantDataMarker, StringComparison.Ordinal);
 
@@ -139,6 +156,7 @@ public class CopilotService : ICopilotService
     private static string StripListMarker(string line) =>
         ListMarkerPattern.Replace(line, string.Empty).Trim();
 
+    /// <summary>Trims the question and rejects it when blank or longer than <see cref="QuestionMaxLength"/>.</summary>
     private static string ValidateQuestion(string? question)
     {
         if (string.IsNullOrWhiteSpace(question))

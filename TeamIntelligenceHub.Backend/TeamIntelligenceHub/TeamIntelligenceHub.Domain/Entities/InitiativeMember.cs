@@ -1,13 +1,9 @@
 ﻿namespace TeamIntelligenceHub.Domain.Entities;
 
 /// <summary>
-/// A person assigned to an Initiative, with the part they play on it.
+/// A person assigned to an Initiative, with the part they play on it. This is the working
+/// team, separate from Initiative.Owner and Initiative.ExecutiveSponsor.
 /// </summary>
-/// <remarks>
-/// Distinct from Initiative.Owner and Initiative.ExecutiveSponsor, which are single
-/// columns on the Initiative itself. This is the working team, and a person can appear
-/// on many Initiatives.
-/// </remarks>
 public class InitiativeMember
 {
     // Single source of truth for field limits, shared with the EF configuration and

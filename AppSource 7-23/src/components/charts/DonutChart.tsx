@@ -8,6 +8,7 @@ interface DonutProps {
   centerValue?: string;
 }
 
+/** d3 donut chart of `data` slices with optional centered value and label text. */
 export function DonutChart({ data, size = 220, centerLabel, centerValue }: DonutProps) {
   const ref = useRef<SVGSVGElement | null>(null);
 
@@ -22,13 +23,13 @@ export function DonutChart({ data, size = 220, centerLabel, centerValue }: Donut
     const g = svg.append("g").attr("transform", `translate(${radius},${radius})`);
 
     const pie = d3.pie<{ label: string; value: number; color: string }>().value((d) => d.value).sort(null);
-    const arc = d3.arc<any>().innerRadius(inner).outerRadius(radius - 4).cornerRadius(6).padAngle(0.02);
+    const arc = d3.arc<d3.PieArcDatum<{ label: string; value: number; color: string }>>().innerRadius(inner).outerRadius(radius - 4).cornerRadius(6).padAngle(0.02);
 
     g.selectAll("path")
       .data(pie(data))
       .enter()
       .append("path")
-      .attr("d", arc as any)
+      .attr("d", arc)
       .attr("fill", (d) => d.data.color)
       .attr("opacity", 0.9);
 
