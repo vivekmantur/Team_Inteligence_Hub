@@ -10,6 +10,7 @@ interface Props {
   className?: string;
 }
 
+/** Free-text name input with suggestions from the mock `teamMembers` list. Not rendered anywhere in the app; other files import only the `initials` and `avatarColorFor` helpers from this module. */
 export function PeoplePickerInput({ value, onChange, placeholder, className }: Props) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -67,6 +68,7 @@ export function PeoplePickerInput({ value, onChange, placeholder, className }: P
   );
 }
 
+/** Up to two uppercase initials from the first letters of the space-separated words in `name`. */
 export function initials(name: string) {
   return name
     .split(" ")
@@ -76,6 +78,7 @@ export function initials(name: string) {
     .toUpperCase();
 }
 
+/** Tailwind gradient classes for an avatar: the mock team member's color when the name matches, else a palette entry picked from the name's char-code sum. */
 export function avatarColorFor(name: string) {
   const known = teamMembers.find((m) => m.name.toLowerCase() === name.toLowerCase());
   if (known) return known.avatarColor;

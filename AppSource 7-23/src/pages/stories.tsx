@@ -40,6 +40,7 @@ const sentimentTone: Record<string, string> = {
   Constructive: "bg-amber-500/10 text-amber-700",
 };
 
+/** Maps hand-entered customer stories and testimonials onto the shared StoryCard shape. */
 function buildCards(
   customerStories: CustomerStoryCardRecord[],
   testimonials: TestimonialCardRecord[]
@@ -164,6 +165,11 @@ function StoryCardGrid({
   );
 }
 
+/**
+ * Stories library: customer zero stories and testimonials, filterable by category, plus a
+ * section of items extracted from uploaded documents. All cards come from the real API;
+ * no mock data.
+ */
 export default function StoriesPage() {
   const [category, setCategory] = useState<Category>("All");
   const { data: customerStories, isLoading: isLoadingCustomerStories } = useCustomerStories();

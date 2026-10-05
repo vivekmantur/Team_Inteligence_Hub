@@ -107,6 +107,13 @@ const healthToneMap: Record<string, string> = {
   "At Risk": "bg-rose-500/10 text-rose-700",
 };
 
+/**
+ * Create / edit Initiative form (`/initiatives/new` and `/initiatives/:id/edit`): a
+ * five-section guided form with live validation and a summary sidebar. It loads, creates,
+ * and updates the Initiative through the real API, and the owner picker uses real users.
+ * Suggested tags are a hard-coded list. After a create, the saved record is also mirrored
+ * into the local InitiativeContext via `addInitiative`.
+ */
 export default function NewInitiativePage() {
   const navigate = useNavigate();
   const { id: routeId } = useParams<{ id: string }>();
@@ -303,10 +310,9 @@ export default function NewInitiativePage() {
   /**
    * Sends the form to the API and keeps the local view in step with what was stored.
    *
-   * "Draft" is a local-only distinction now — InitiativeStatus no longer has a Draft
-   * member (it moved out to LifecycleStage/Health), so both buttons send whatever
-   * Status/Lifecycle/Health the user actually chose; only the success-screen wording
-   * differs. Description and both dates are NOT NULL in the database either way, so a
+   * "Draft" is a local-only distinction: InitiativeStatus has no Draft member (draft-like
+   * state lives in LifecycleStage/Health), so both buttons send the Status/Lifecycle/Health
+   * the user chose and only the success-screen wording differs. Description and both dates are NOT NULL in the database either way, so a
    * draft cannot skip them.
    */
   const submit = async (isDraft: boolean) => {
@@ -1063,6 +1069,7 @@ export default function NewInitiativePage() {
 
 /* ---------- Sub-components ---------- */
 
+/** Numbered form step card with an icon, title, and a "Complete" badge once its progress reaches 100%. */
 function FormSection({
   icon: Icon,
   step,

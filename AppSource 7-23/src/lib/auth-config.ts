@@ -37,6 +37,7 @@ function defaultRedirectUri(): string {
 
 const redirectUri = import.meta.env.VITE_ENTRA_REDIRECT_URI?.trim() || defaultRedirectUri();
 
+/** MSAL configuration built from the Vite env vars above. */
 export const msalConfig: Configuration = {
   auth: {
     clientId,
@@ -54,9 +55,9 @@ export const msalConfig: Configuration = {
       // Use verbose logging during development to capture MSAL internals.
       logLevel: import.meta.env.DEV ? LogLevel.Verbose : LogLevel.Error,
       piiLoggingEnabled: false,
-      // logLevel above asks for Verbose in dev, so the callback has to print below
-      // Warning too. Dropping it meant the interesting part of a silent-auth failure
-      // (which flow ran, whether the iframe was used) never reached the console.
+      // Errors always print. In dev, warnings and verbose messages print too, matching
+      // logLevel above, so a silent-auth failure shows which flow ran and whether the
+      // iframe was used.
       loggerCallback: (level, message, containsPii) => {
         if (containsPii) return;
         if (level === LogLevel.Error) console.error("[msal]", message);
@@ -89,9 +90,11 @@ export const signUpRequest: RedirectRequest = {
   prompt: "create",
 };
 
+/** The app's single MSAL client, used by AuthProvider (via MsalProvider) and the API client. */
 export const msalInstance = new PublicClientApplication(msalConfig);
 
-// Expose for debugging in dev so you can call methods from DevTools (e.g. msalInstance.loginRedirect())
+// Attached to window in every environment (not only dev) so its methods can be called
+// from DevTools, e.g. msalInstance.loginRedirect().
 if (typeof window !== "undefined") {
   try {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment

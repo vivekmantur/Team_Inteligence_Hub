@@ -25,6 +25,7 @@ import { AppErrorBoundary } from "./components/system/AppErrorBoundary";
 const isDevMode = import.meta.env.DEV;
 
 // NOTE(ai): DO NOT REMOVE — (ROUTER BASE) keep this or deep links break in playback.
+// Returns the first path segment as the router basename (e.g. "/<appId>/"), or "/".
 function getBase(pathname: string): string {
   const parts = pathname.split("/").filter(Boolean);
   return parts.length ? `/${parts[0]}/` : "/";

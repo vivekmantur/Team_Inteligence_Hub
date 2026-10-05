@@ -9,8 +9,9 @@ import {
 import { cn } from "@/lib/utils";
 import { useAddContribution } from "@/components/contribution/ContributionContext";
 import { downloadContributionAttachment } from "@/hooks/use-contributions";
+import type { LucideIcon } from "lucide-react";
 
-const typeMeta: Record<string, { icon: any; color: string }> = {
+const typeMeta: Record<string, { icon: LucideIcon; color: string }> = {
   PPT: { icon: Presentation, color: "from-orange-500 to-rose-500" },
   PDF: { icon: FileText, color: "from-rose-500 to-red-500" },
   Word: { icon: FileType, color: "from-indigo-500 to-blue-500" },
@@ -61,6 +62,11 @@ type KnowledgeAsset = {
   initiativeName: string;
 };
 
+/**
+ * Knowledge library: a searchable, filterable grid of every file attached to a
+ * contribution, with download and Copilot-citation highlighting (`?highlight=`).
+ * All assets come from real API contributions via `useAddContribution`; no mock data.
+ */
 export default function KnowledgePage() {
   const [f, setF] = useState<(typeof filters)[number]>("All");
   const [q, setQ] = useState("");

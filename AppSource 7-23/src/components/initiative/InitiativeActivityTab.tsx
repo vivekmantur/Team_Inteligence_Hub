@@ -25,11 +25,13 @@ import {
   Rocket,
   ArrowRight,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 interface Props {
   initiativeId: string;
 }
 
+/** Activity tab for an Initiative: a composer for @mention updates plus a feed merging API posts with local activity entries. */
 export function InitiativeActivityTab({ initiativeId }: Props) {
   const { activityByInitiative } = useInitiatives();
   const activity = activityByInitiative[initiativeId] || [];
@@ -58,8 +60,8 @@ export function InitiativeActivityTab({ initiativeId }: Props) {
   );
 
   /**
-   * Posts the update. With auto-create on, the API raises a task for each person
-   * mentioned other than the author — the loop that used to live here.
+   * Posts the update. With auto-create on, the API (not this component) raises a task
+   * for each person mentioned other than the author.
    */
   const handlePost = () => {
     if (!text.trim()) return;
@@ -300,7 +302,7 @@ export function InitiativeActivityTab({ initiativeId }: Props) {
 }
 
 function ActivityLine({ kind, actor, summary }: { kind: string; actor: string; summary: string }) {
-  let Icon: any = ArrowRight;
+  let Icon: LucideIcon = ArrowRight;
   let tone = "text-muted-foreground";
   switch (kind) {
     case "member-added":

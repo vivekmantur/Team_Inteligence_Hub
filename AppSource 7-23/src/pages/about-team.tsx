@@ -19,6 +19,11 @@ const MOCK_EXPERTISE = [
   { skills: ["Executive", "Marketing"], score: 90 },
 ];
 
+/**
+ * Team ownership and capacity screen. Team rows, allocation totals, and each person's
+ * AppRole come from the real API, and users can edit their own AppRole inline. The
+ * "Skills & Expertise" skills and scores are illustrative values from MOCK_EXPERTISE.
+ */
 export default function AboutTeamPage() {
   const { data: rows, isLoading } = useTeamCapacity();
   const { data: backendUser } = useBackendUser();

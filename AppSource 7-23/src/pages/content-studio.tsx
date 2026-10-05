@@ -42,6 +42,12 @@ const lengths = ["Short", "Medium", "Long"];
  */
 type SessionTurn = { instruction: string; output: string };
 
+/**
+ * AI Content Studio: pick a format, tone, audience, length, and Initiative, then generate
+ * grounded content through the real content-generation API, with multi-turn session
+ * context. The Initiative picker uses real API data. "Recent generations" is an in-memory
+ * store seeded from mock data in `@/data/mock` and is not persisted to the backend.
+ */
 export default function ContentStudioPage() {
   const [params] = useSearchParams();
   const initialType = (params.get("type") as GeneratedContent["type"]) || "LinkedIn Post";
@@ -68,16 +74,10 @@ export default function ContentStudioPage() {
   const output = generation.data?.content ?? "";
 
   /**
-   * Session identity is the selected Initiative plus the backend format value — not the
-   * UI label, since that's what the request and response both carry. sessionKeyRef always
-   * holds the *live* active key: it's read inside the mutation's onSuccess below, whose
-   * own closure is frozen at submit time, so a late response arriving after the user has
-   * since switched Initiative or format can still be detected as stale and skipped
-   * (rule 16) rather than joining the wrong session.
-   *
-   * Writing to the ref and resetting state directly in the render body — rather than in a
-   * useEffect — is the React-documented way to reset state when a derived value changes:
-   * the session clears immediately, with no extra render showing stale turns first.
+   * A session is keyed by Initiative id plus the wire format value. The ref holds the live
+   * key so onSuccess can drop a late response whose Initiative or format no longer matches
+   * the current selection. The reset runs during render, not in an effect, so stale turns
+   * never paint.
    */
   const sessionKeyRef = useRef<string | null>(null);
   const activeSessionKey = initiative ? `${initiative.id}:${contentFormatToWire(type)}` : null;
@@ -147,9 +147,8 @@ export default function ContentStudioPage() {
   const handleRetry = () => {
     if (!lastRequest) return;
 
-    // Replays the exact original request — including its previousTurns exactly as they
-    // were at failure time — so a retry can never duplicate the failed turn (it was
-    // never appended) or drop history that existed before the failure.
+    // Replays the original request, previousTurns included, so a retry neither duplicates
+    // the failed turn nor drops earlier history.
     const { initiativeId, ...request } = lastRequest;
     submit(initiativeId, request);
   };
@@ -371,9 +370,8 @@ export default function ContentStudioPage() {
 }
 
 /**
- * A search-to-filter dropdown over the real Initiatives list, rather than a plain
- * <select> — the list can grow past what's comfortable to scan, and typing a few
- * letters of the name is faster than scrolling once there are more than a handful.
+ * A search-to-filter dropdown over the Initiatives list. It replaces a plain <select>
+ * because typing part of a name is faster than scrolling a long list.
  */
 function InitiativePickerInput({
   initiatives,

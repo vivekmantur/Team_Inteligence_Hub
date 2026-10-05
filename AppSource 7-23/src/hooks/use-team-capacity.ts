@@ -6,6 +6,7 @@ import { useUsers } from "./use-users";
 import { useInitiativesQuery } from "./use-initiatives-api";
 import { membersQueryKey, type InitiativeMemberRecord } from "./use-initiative-members";
 
+/** One person's row in the Team page's capacity panel. */
 export type TeamCapacityRow = {
   userId: number;
   displayName: string;

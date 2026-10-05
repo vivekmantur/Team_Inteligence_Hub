@@ -7,6 +7,7 @@ import { useInitiativesQuery, type ChangeImpactWire, type HealthWire, type Lifec
 import { membersQueryKey, type InitiativeMemberRecord } from "./use-initiative-members";
 import { tasksQueryKey, type TaskRecord } from "./use-initiative-tasks";
 
+/** One row of the signed-in user's Initiative list on the Home page. */
 export type MyInitiativeSummary = {
   id: number;
   name: string;
@@ -30,8 +31,8 @@ const HEALTH_RANK: Record<HealthWire, number> = {
 };
 
 /**
- * Initiatives the signed-in user owns or is a team member of, newest concern first
- * (At Risk, then Needs Attention, then On Track).
+ * Initiatives the signed-in user owns or is a team member of, most urgent health first
+ * (At Risk, then Needs Attention, then On Track) and by name within each group.
  *
  * Two fan-outs, same reasoning as ContributionContext and useMyOpenTasksCount: neither
  * "who's on this Initiative" nor "this Initiative's tasks" has a company-wide endpoint,

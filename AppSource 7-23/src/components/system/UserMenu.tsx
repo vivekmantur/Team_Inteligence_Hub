@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
 
+/** Avatar dropdown showing the signed-in user with a sign-out action; renders a placeholder icon when signed out. */
 export function UserMenu() {
   const { user, signOut } = useAuth();
 

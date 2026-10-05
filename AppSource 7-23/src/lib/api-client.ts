@@ -7,6 +7,10 @@ export const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL?.trim() ?? "").repl
 /** The backend can only be called once both the base URL and the API scope are set. */
 export const isApiConfigured = apiBaseUrl.length > 0 && apiScopes.length > 0;
 
+/**
+ * A failed backend call: the HTTP status (0 when the API is not configured), a readable
+ * message, and the parsed response body when there is one.
+ */
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -39,10 +43,12 @@ function isInPopupWindow(): boolean {
  * Silent first — MSAL serves it from cache or refreshes it behind the scenes. Only when
  * Entra insists on interaction (consent, MFA, expired session) do we prompt, and only from
  * the top-level window.
- */
-/**
- * Exported so multipart uploads can attach the token by hand — they cannot go through
+ *
+ * Exported so multipart uploads can attach the token by hand. They cannot go through
  * apiFetch, which sets a JSON content type and would break the form boundary.
+ *
+ * @throws ApiError with status 0 when the backend is not configured, or 401 when no
+ *   account is signed in. Other MSAL errors are rethrown unchanged.
  */
 export async function getAccessToken(): Promise<string> {
   if (!isApiConfigured) {
@@ -73,12 +79,11 @@ export async function getAccessToken(): Promise<string> {
 /**
  * Should a failed silent request be retried interactively?
  *
- * InteractionRequiredAuthError is the documented case. `timed_out` is the other one worth
- * catching: when no cached token can be refreshed, MSAL falls back to a hidden iframe and
- * waits `system.iframeBridgeTimeout` (10s) for the redirect page to broadcast the
- * response. Anything that stops the iframe reaching us — a slow load, an interstitial,
- * third-party cookies blocked so Entra never redirects back — surfaces as that timeout.
- * It is recoverable by asking the person, so it should not become a dead page.
+ * InteractionRequiredAuthError is the documented case. `timed_out` is the other: when no
+ * cached token can be refreshed, MSAL falls back to a hidden iframe and waits
+ * `system.iframeBridgeTimeout` (10s) for the response. A slow load, an interstitial, or
+ * blocked third-party cookies all surface as that timeout. Prompting the person recovers
+ * from it, so it does not end in a dead page.
  */
 function needsInteraction(error: unknown): boolean {
   if (error instanceof InteractionRequiredAuthError) return true;
@@ -87,9 +92,11 @@ function needsInteraction(error: unknown): boolean {
 }
 
 /**
- * Calls the backend with a bearer token attached.
+ * Calls the backend with a bearer token attached and returns the parsed JSON body, or
+ * `undefined` for a 204. A JSON content type is set whenever a body is sent without one.
  *
  * @param path Absolute path on the API, e.g. `/api/users/me`.
+ * @throws ApiError for any non-2xx response, carrying the server's message when it sends one.
  */
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = await getAccessToken();

@@ -24,6 +24,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "ai-agents", label: "AI & Agents" },
 ];
 
+/** Four stat tiles (active, at risk, needs attention, roles covered) from the real readiness insights API. */
 function ReadinessStats({
   insights,
   isLoading,
@@ -89,6 +90,7 @@ function AdoptionOutcomeMetrics() {
   );
 }
 
+/** Per-role Initiative and high-impact counts from the real readiness insights API. */
 function ImpactedEnterpriseRoles({
   insights,
   isLoading,
@@ -128,6 +130,7 @@ function ImpactedEnterpriseRoles({
   );
 }
 
+/** Uses, success rate, and hours saved per AI agent, from mock `agents` data. */
 function AiAgentAnalytics() {
   return (
     <div className="glass rounded-2xl p-5">
@@ -162,6 +165,11 @@ function AiAgentAnalytics() {
   );
 }
 
+/**
+ * Insights screen with Overview, Readiness, Audience & Roles, and AI & Agents tabs.
+ * Readiness stats and role coverage come from the real API. Adoption & outcome metrics
+ * and AI agent analytics are mock data from `@/data/mock`.
+ */
 export default function InsightsPage() {
   const [tab, setTab] = useState<TabId>("overview");
   const { data: insights, isLoading: isLoadingInsights } = useReadinessInsights();

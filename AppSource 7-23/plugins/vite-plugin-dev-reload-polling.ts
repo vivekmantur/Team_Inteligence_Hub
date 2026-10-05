@@ -5,13 +5,25 @@
  *  - CSS-only fast path (cache-bust stylesheets without full reload)
  */
 
-import type { Plugin, ViteDevServer, ModuleNode, HmrContext } from 'vite';
+import type { Plugin, ViteDevServer, ModuleNode, HmrContext, Connect } from 'vite';
+import type { ServerResponse } from 'node:http';
 
 // Fixed constants
 const DEBOUNCE_MS = 80;
 const POLL_INTERVAL_MS = 2000; // Poll every 2 seconds
 const STATUS_PATH = '/__dev/reload/status';
 const CSS_EXTENSIONS = ['.css', '.scss', '.sass', '.less', '.styl', '.pcss'];
+
+/** The fields read from a build or HMR error; any of them may be missing. */
+type BuildErrorLike = { message?: string; stack?: string; plugin?: string; id?: string };
+
+/** A build error with the project path replaced by `<cwd>`. */
+interface NormalizedBuildError {
+  message: string;
+  stack: string;
+  plugin?: string;
+  id?: string;
+}
 
 interface PendingChange {
   file: string;
@@ -23,7 +35,7 @@ interface BuildStatus {
   version: number;
   lastBuildTime: number;
   cssOnly: boolean;
-  error?: any;
+  error?: NormalizedBuildError;
 }
 
 export default function devReload(): Plugin {
@@ -67,7 +79,8 @@ export default function devReload(): Plugin {
     pending.clear();
   }
 
-  function normalizeBuildError(err: any) {
+  /** Redacts the project path from an error and keeps only the fields the client logs. */
+  function normalizeBuildError(err: BuildErrorLike | null | undefined): NormalizedBuildError {
     return {
       message: (err?.message || String(err)).replaceAll(cwd, '<cwd>'),
       stack: (err?.stack || '').split('\n')
@@ -78,22 +91,27 @@ export default function devReload(): Plugin {
     };
   }
 
-  function recordBuildError(err: any) {
-    latestStatus.error = normalizeBuildError(err);
+  // Receives whatever was thrown or rejected, so it is treated as error-like.
+  function recordBuildError(err: unknown) {
+    latestStatus.error = normalizeBuildError(err as BuildErrorLike);
   }
 
   function interceptHMR() {
-    const ws: any = (server as any).ws;
+    // `send` is overloaded (an HMR payload object or a custom event name) and is
+    // reassigned below, so the patched server is typed loosely here.
+    const ws: any = server.ws;
     if (!ws || ws.__devReloadPatched) return;
     ws.__devReloadPatched = true;
     const originalSend = ws.send.bind(ws);
-    ws.send = (payload: any, clientsArg?: any) => {
-      try { originalSend(payload, clientsArg); } catch {}
+    ws.send = (payload: any, clientsArg?: unknown) => {
+      try { originalSend(payload, clientsArg); } catch {
+        // Vite's own send failing must not stop the mirror below.
+      }
       try {
         if (!payload || !payload.type) return;
         if (payload.type === 'error') {
           const now = Date.now();
-          const norm = normalizeBuildError(payload.err || payload.error || payload);
+          const norm = normalizeBuildError((payload.err || payload.error || payload) as BuildErrorLike);
           const sig = `${norm.plugin || ''}|${norm.id || ''}|${norm.message}`;
           if (sig !== lastHmrErrorSig || now - lastHmrErrorTime > HMR_ERROR_DEDUPE_WINDOW_MS) {
             lastHmrErrorSig = sig;
@@ -101,7 +119,9 @@ export default function devReload(): Plugin {
             latestStatus.error = norm;
           }
         }
-      } catch {}
+      } catch {
+        // Mirroring is best-effort; a malformed payload must not break HMR.
+      }
     };
   }
 
@@ -116,11 +136,13 @@ export default function devReload(): Plugin {
         try {
           process.on('uncaughtException', recordBuildError);
           process.on('unhandledRejection', recordBuildError);
-        } catch {}
+        } catch {
+          // Hooks are optional; without them build errors are simply not mirrored.
+        }
       }
       
       // Polling endpoint - returns current build status
-      server.middlewares.use(STATUS_PATH, (_req: any, res: any) => {
+      server.middlewares.use(STATUS_PATH, (_req: Connect.IncomingMessage, res: ServerResponse) => {
         res.writeHead(200, {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-cache',

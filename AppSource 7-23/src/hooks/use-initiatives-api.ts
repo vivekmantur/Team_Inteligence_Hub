@@ -121,57 +121,85 @@ function toWire<T extends string>(
   return match ?? fallback;
 }
 
+// Label converters. Each *ToWire returns the wire value whose label matches, or the
+// stated fallback when none does; each *ToLabel returns the display label, or the wire
+// value itself when it has no label.
+
+/** Converts a status label to its wire value; falls back to "Active". */
 export const statusToWire = (label: string): StatusWire =>
   toWire(STATUS_LABELS, label, "Active");
 
+/** Converts a status wire value to its display label. */
 export const statusToLabel = (wire: StatusWire): string =>
   STATUS_LABELS[wire] ?? wire;
 
+/** Converts a workform label to its wire value; falls back to "Motion". */
 export const workformToWire = (label: string): WorkformWire =>
   toWire(WORKFORM_LABELS, label, "Motion");
 
+/** Converts a workform wire value to its display label. */
 export const workformToLabel = (wire: WorkformWire): string =>
   WORKFORM_LABELS[wire] ?? wire;
 
+/** Converts a focus area label to its wire value; falls back to "Other". */
 export const focusAreaToWire = (label: string): FocusAreaWire =>
   toWire(FOCUS_AREA_LABELS, label, "Other");
 
+/** Converts a focus area wire value to its display label. */
 export const focusAreaToLabel = (wire: FocusAreaWire): string =>
   FOCUS_AREA_LABELS[wire] ?? wire;
 
+/** Converts a lifecycle stage label to its wire value; falls back to "Assess". */
 export const lifecycleStageToWire = (label: string): LifecycleStageWire =>
   toWire(LIFECYCLE_STAGE_LABELS, label, "Assess");
 
+/** Converts a lifecycle stage wire value to its display label. */
 export const lifecycleStageToLabel = (wire: LifecycleStageWire): string =>
   LIFECYCLE_STAGE_LABELS[wire] ?? wire;
 
+/** Converts a health label to its wire value; falls back to "OnTrack". */
 export const healthToWire = (label: string): HealthWire =>
   toWire(HEALTH_LABELS, label, "OnTrack");
 
+/** Converts a health wire value to its display label. */
 export const healthToLabel = (wire: HealthWire): string =>
   HEALTH_LABELS[wire] ?? wire;
 
+/** Converts a segment label to its wire value; falls back to "Enterprise". */
 export const segmentToWire = (label: string): SegmentWire =>
   toWire(SEGMENT_LABELS, label, "Enterprise");
 
+/** Converts a segment wire value to its display label. */
 export const segmentToLabel = (wire: SegmentWire): string =>
   SEGMENT_LABELS[wire] ?? wire;
 
+/** Converts a change impact label to its wire value; falls back to "Medium". */
 export const changeImpactToWire = (label: string): ChangeImpactWire =>
   toWire(CHANGE_IMPACT_LABELS, label, "Medium");
 
+/** Converts a change impact wire value to its display label. */
 export const changeImpactToLabel = (wire: ChangeImpactWire): string =>
   CHANGE_IMPACT_LABELS[wire] ?? wire;
 
+/** Converts an enterprise role code (e.g. "AE") to its full title. */
 export const enterpriseRoleToLabel = (wire: EnterpriseRoleWire): string =>
   ENTERPRISE_ROLE_LABELS[wire] ?? wire;
 
+// Every wire value of each enum, in label-map order, for building pickers and filters.
+
+/** Every enterprise role code. */
 export const ENTERPRISE_ROLES = Object.keys(ENTERPRISE_ROLE_LABELS) as EnterpriseRoleWire[];
+/** Every workform wire value. */
 export const WORKFORMS = Object.keys(WORKFORM_LABELS) as WorkformWire[];
+/** Every focus area wire value. */
 export const FOCUS_AREAS = Object.keys(FOCUS_AREA_LABELS) as FocusAreaWire[];
+/** Every lifecycle stage wire value. */
 export const LIFECYCLE_STAGES = Object.keys(LIFECYCLE_STAGE_LABELS) as LifecycleStageWire[];
+/** Every health wire value. */
 export const HEALTHS = Object.keys(HEALTH_LABELS) as HealthWire[];
+/** Every status wire value. */
 export const STATUSES = Object.keys(STATUS_LABELS) as StatusWire[];
+/** Every change impact wire value. */
 export const CHANGE_IMPACTS = Object.keys(CHANGE_IMPACT_LABELS) as ChangeImpactWire[];
 
 /** Mirrors InitiativeResponseDto from TeamIntelligenceHub.Application. */
@@ -223,8 +251,12 @@ export type CreateInitiativeRequest = {
   successMeasures?: string;
 };
 
+/** React Query cache key for the Initiative list; detail keys extend it with an id. */
 export const initiativesQueryKey = ["initiatives"] as const;
 
+/**
+ * Loads every Initiative. Disabled until the user is signed in and the API is configured.
+ */
 export function useInitiativesQuery() {
   const { isAuthenticated } = useAuth();
 
@@ -271,8 +303,13 @@ export type ReadinessInsights = {
   roleCoverage: EnterpriseRoleCoverageRecord[];
 };
 
+/** React Query cache key for the readiness insights aggregate. */
 export const readinessInsightsQueryKey = ["initiatives", "readiness-insights"] as const;
 
+/**
+ * Loads the readiness and role-coverage counts for the Insights page. Disabled until the
+ * user is signed in and the API is configured.
+ */
 export function useReadinessInsights() {
   const { isAuthenticated } = useAuth();
 

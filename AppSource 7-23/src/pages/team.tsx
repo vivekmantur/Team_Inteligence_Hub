@@ -7,6 +7,11 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useAddContribution } from "@/components/contribution/ContributionContext";
 
+/**
+ * Team contributions screen: searchable recent contributions, a per-Initiative breakdown,
+ * and team member cards. Contributions come from the real API. The Initiative filter
+ * options, team member cards, and deliverables counts are mock data from `@/data/mock`.
+ */
 export default function TeamPage() {
   const { openAddContribution, openEditContribution, contributions } = useAddContribution();
   const [initiativeFilter, setInitiativeFilter] = useState<string>("All");

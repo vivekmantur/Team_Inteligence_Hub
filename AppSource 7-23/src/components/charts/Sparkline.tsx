@@ -7,6 +7,7 @@ interface SparklineProps {
   height?: number;
 }
 
+/** Compact d3 area + line trend for a numeric series, sized to its container width. */
 export function Sparkline({ data, color = "#6366f1", height = 40 }: SparklineProps) {
   const ref = useRef<SVGSVGElement | null>(null);
 

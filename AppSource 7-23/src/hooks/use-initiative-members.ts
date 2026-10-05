@@ -17,6 +17,7 @@ export type InitiativeMemberRecord = {
   joinedAt: string;
 };
 
+/** Body for adding a user to an Initiative's team. */
 export type AddMemberRequest = {
   userId: number;
   role: string;
@@ -24,15 +25,21 @@ export type AddMemberRequest = {
   allocation?: number;
 };
 
+/** Body for editing a team member's role, responsibility area, or allocation. */
 export type UpdateMemberRequest = {
   role: string;
   responsibilityArea?: string;
   allocation?: number;
 };
 
+/** Builds the React Query cache key for one Initiative's member list. */
 export const membersQueryKey = (initiativeId: number) =>
   ["initiatives", initiativeId, "members"] as const;
 
+/**
+ * Loads one Initiative's team members. Disabled until the user is signed in, the API is
+ * configured, and an initiativeId is set.
+ */
 export function useInitiativeMembers(initiativeId: number | null) {
   const { isAuthenticated } = useAuth();
 
@@ -45,8 +52,10 @@ export function useInitiativeMembers(initiativeId: number | null) {
 }
 
 /**
- * Mutations for one Initiative's team. Each invalidates the member list so the panel
- * reflects what was actually stored rather than what was optimistically assumed.
+ * Adds a user to the Initiative's team, then refreshes the member list.
+ *
+ * This and the other member mutations below invalidate the member list on success, so the
+ * panel shows what the server stored rather than an optimistic guess.
  */
 export function useAddInitiativeMember(initiativeId: number | null) {
   const queryClient = useQueryClient();
@@ -65,6 +74,7 @@ export function useAddInitiativeMember(initiativeId: number | null) {
   });
 }
 
+/** Replaces a team member's role, responsibility area, and allocation (PUT), then refreshes the member list. */
 export function useUpdateInitiativeMember(initiativeId: number | null) {
   const queryClient = useQueryClient();
 
@@ -82,6 +92,7 @@ export function useUpdateInitiativeMember(initiativeId: number | null) {
   });
 }
 
+/** Removes a member from the Initiative's team by member id, then refreshes the member list. */
 export function useRemoveInitiativeMember(initiativeId: number | null) {
   const queryClient = useQueryClient();
 

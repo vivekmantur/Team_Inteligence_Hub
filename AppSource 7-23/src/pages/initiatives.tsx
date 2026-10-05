@@ -39,6 +39,11 @@ import { useAddContribution } from "@/components/contribution/ContributionContex
 
 const statuses = ["All", "Active", "On Hold", "Cancelled", "Completed"] as const;
 
+/**
+ * Initiatives list with search, status filter, and delete. The Initiatives come from the
+ * real API. Per-card team and task counts read the local InitiativeContext, and the
+ * deliverables count reads mock data from `@/data/mock`.
+ */
 export default function InitiativesPage() {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<(typeof statuses)[number]>("All");

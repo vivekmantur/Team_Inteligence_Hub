@@ -24,6 +24,7 @@ const nav = [
   { to: "/aboutteam", label: "Team", icon: UserCog },
 ];
 
+/** Fixed left navigation sidebar (large screens only) with route links and a Copilot status card. */
 export function AppSidebar() {
   return (
     <aside className="hidden lg:flex fixed inset-y-0 left-0 w-64 z-30 flex-col p-3">

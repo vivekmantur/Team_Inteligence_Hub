@@ -24,6 +24,7 @@ interface MentionInputProps {
 
 const MENTION_REGEX = /@([\w][\w '.-]*)/g;
 
+/** Returns the names from `poolNames` that appear in `text` as @mentions (case-insensitive), each once. */
 export function extractMentions(text: string, poolNames: string[]): string[] {
   const found = new Set<string>();
   const lowerPool = new Map(poolNames.map((n) => [n.toLowerCase(), n]));
@@ -44,6 +45,7 @@ export function extractMentions(text: string, poolNames: string[]): string[] {
   return Array.from(found);
 }
 
+/** Textarea with an @mention suggestion popup; reports mentioned names (and ids, when `people` is given) on every change. */
 export function MentionInput({
   value,
   onChange,
@@ -95,7 +97,7 @@ export function MentionInput({
     const at = upto.lastIndexOf("@");
     if (at >= 0) {
       const between = upto.slice(at + 1);
-      // Only open if no space right after @
+      // Keep the popup open while the text after @ has no run of 2+ spaces and is at most 30 chars
       if (!/\s{2,}/.test(between) && between.length <= 30) {
         setOpenAt(at);
         setQuery(between);

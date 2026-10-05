@@ -4,6 +4,10 @@ import { AppSidebar } from "@/components/system/AppSidebar";
 import { TopBar } from "@/components/system/TopBar";
 import { useBackendUser } from "@/hooks/use-backend-user";
 
+/**
+ * Authenticated app shell: sidebar, top bar, and the routed page via <Outlet />. It syncs
+ * the signed-in user with the real API and shows a warning banner if that sync fails.
+ */
 export default function Layout() {
   // Resolves the signed-in user against the API, which creates or refreshes their row.
   // A failure here must not lock anyone out, so it surfaces as a banner and nothing more.

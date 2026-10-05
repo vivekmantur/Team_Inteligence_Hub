@@ -1,7 +1,7 @@
 // In-memory mock data layer for the Team Intelligence Hub.
 // NOTE(ai): Everything is ephemeral. Refresh = reset.
 
-// Initiative status (previously ProjectStatus — alias kept for backward compatibility)
+// Initiative status. ProjectStatus is an alias for code that still imports the old name.
 export type InitiativeStatus = "On Track" | "At Risk" | "Completed" | "Planning";
 export type ProjectStatus = InitiativeStatus;
 
@@ -16,7 +16,7 @@ export interface Initiative {
   description: string;
   tags: string[];
 }
-// Backward-compat alias
+// Alias for code that still imports the old Project name.
 export type Project = Initiative;
 
 export interface Deliverable {
@@ -118,7 +118,7 @@ export const initiatives: Initiative[] = [
   { id: "p5", name: "Executive Narrative Studio", workstream: "Marketing", status: "Planning", progress: 18, owner: "Elena Rossi", updated: "6 days ago", description: "Content studio for leadership-ready briefs and decks.", tags: ["Marketing", "Executive"] },
   { id: "p6", name: "Agent Analytics Fabric", workstream: "Insights", status: "Completed", progress: 100, owner: "Diego Alvarez", updated: "2 weeks ago", description: "Real-time analytics for internal agent portfolio.", tags: ["Agents", "Fabric"] },
 ];
-// Backward-compat alias so any legacy imports keep working.
+// Alias for code that still imports the old projects name.
 export const projects = initiatives;
 
 export const deliverables: Deliverable[] = [
@@ -213,11 +213,11 @@ export const kpiSnapshot = {
 // ---------------------------------------------------------------------------
 // "My Attention" — the personalized home page.
 //
-// A separate mock dataset rather than reshaping `initiatives`/`Initiative`: this view's
-// fields (phase, impacted roles, a person tagged in an activity feed) are specific to
-// "what needs this signed-in person's attention", not the general Initiative record every
-// other page reads. Keeping it separate means this page's mock shape can evolve — or be
-// swapped for a real "my attention" endpoint later — without touching the shared type.
+// A separate mock dataset from `initiatives`/`Initiative`: this view's fields (phase,
+// impacted roles, a person tagged in an activity feed) describe what needs this
+// signed-in person's attention, not the general Initiative record other pages read.
+// Keeping it separate lets this shape change, or move to a real endpoint, without
+// touching the shared type.
 // ---------------------------------------------------------------------------
 
 export interface AttentionStat {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
 import {
   Dialog,
   DialogContent,
@@ -1128,8 +1129,141 @@ function SectionTitle({ eyebrow, title, description }: { eyebrow: string; title:
   );
 }
 
+/* Sub-component prop types. Each mirrors exactly what AddContributionWizard passes. */
+
+type SetState<T> = Dispatch<SetStateAction<T>>;
+
+type MetricDraft = typeof EMPTY_METRIC;
+type AiDraft = typeof EMPTY_AI;
+type StoryDraft = typeof EMPTY_STORY;
+type AssetDraft = typeof EMPTY_ASSET;
+
+/** An Initiative card in Step 1, flattened from the API record. */
+type InitiativeOption = { id: string; name: string; workstream: string; owner: string; progress: number };
+
+/** An active user who can be credited as a contributor or chosen as a risk owner. */
+type PersonOption = { id: string; name: string; subtitle: string };
+
+type ContributorDraft = { id: string; name: string; role: string; area: string; primary: boolean };
+
+type LinkDraft = { id: string; source: string; url: string; label: string };
+
+type Step1Props = {
+  initiativeId: string;
+  setInitiativeId: SetState<string>;
+  query: string;
+  setQuery: SetState<string>;
+  items: InitiativeOption[];
+  submitter: { id: string; name: string; role: string };
+  initiative: InitiativeOption | undefined;
+  /** True when editing: the Initiative is shown read-only. */
+  locked: boolean;
+};
+
+type Step3Props = {
+  title: string;
+  setTitle: SetState<string>;
+  description: string;
+  setDescription: SetState<string>;
+  keyTakeaway: string;
+  setKeyTakeaway: SetState<string>;
+  priority: ContributionPriorityWire;
+  setPriority: SetState<ContributionPriorityWire>;
+  tags: string[];
+  setTags: SetState<string[]>;
+  tagInput: string;
+  setTagInput: SetState<string>;
+  onAddTag: () => void;
+};
+
+type Step4Props = {
+  /** False when none of the selected types has a detail section. */
+  hasAny: boolean;
+  showMetric: boolean;
+  showRisk: boolean;
+  showAI: boolean;
+  showStory: boolean;
+  showTestimonial: boolean;
+  showAsset: boolean;
+  metric: MetricDraft;
+  setMetric: SetState<MetricDraft>;
+  risk: RiskDraft;
+  setRisk: SetState<RiskDraft>;
+  ai: AiDraft;
+  setAi: SetState<AiDraft>;
+  story: StoryDraft;
+  setStory: SetState<StoryDraft>;
+  testimonial: TestimonialDraft;
+  setTestimonial: SetState<TestimonialDraft>;
+  asset: AssetDraft;
+  setAsset: SetState<AssetDraft>;
+  types: string[];
+  people: PersonOption[];
+};
+
+type SectionCardProps = { title: string; icon: ReactNode; gradient: string; children: ReactNode };
+
+type FieldProps = {
+  label: string;
+  children: ReactNode;
+  /** Span both columns of the two-column grid. */
+  full?: boolean;
+};
+
+type Step5Props = {
+  files: PendingFile[];
+  setFiles: SetState<PendingFile[]>;
+  existingAttachments?: ContributionAttachmentRecord[];
+  onRemoveExistingAttachment: (attachmentId: number) => Promise<void>;
+  links: LinkDraft[];
+  onAddLink: () => void;
+  linkSource: string;
+  setLinkSource: SetState<string>;
+  linkUrl: string;
+  setLinkUrl: SetState<string>;
+  linkLabel: string;
+  setLinkLabel: SetState<string>;
+  dragOver: boolean;
+  setDragOver: SetState<boolean>;
+  handleFiles: (list: FileList | File[]) => void;
+  fileInputRef: RefObject<HTMLInputElement>;
+  onRemoveLink: (id: string) => void;
+  onRemoveFile: (id: string) => void;
+};
+
+type Step6Props = {
+  contributors: ContributorDraft[];
+  setContributors: SetState<ContributorDraft[]>;
+  filteredPeople: PersonOption[];
+  personQuery: string;
+  setPersonQuery: SetState<string>;
+  onAdd: (id: string) => void;
+  onRemove: (id: string) => void;
+  onTogglePrimary: (id: string) => void;
+};
+
+type Step8Props = {
+  initiativeName: string | undefined;
+  workstream: string | undefined;
+  /** Display labels, not type ids. */
+  types: string[];
+  title: string;
+  description: string;
+  keyTakeaway: string;
+  priority: ContributionPriorityWire;
+  tags: string[];
+  files: PendingFile[];
+  existingAttachments?: ContributionAttachmentRecord[];
+  links: LinkDraft[];
+  contributors: ContributorDraft[];
+  visibility: string[];
+  onJumpTo: (step: number) => void;
+};
+
+type ReviewCardProps = { title: string; step: number; onEdit: (step: number) => void; children: ReactNode };
+
 /* Step 1 */
-function Step1({ initiativeId, setInitiativeId, query, setQuery, items, submitter, initiative, locked }: any) {
+function Step1({ initiativeId, setInitiativeId, query, setQuery, items, submitter, initiative, locked }: Step1Props) {
   return (
     <div>
       <SectionTitle
@@ -1181,7 +1315,7 @@ function Step1({ initiativeId, setInitiativeId, query, setQuery, items, submitte
               ring-2 and shadow need room inside the scroll box. The negative margin
               cancels the padding so the cards still line up with the search field. */}
           <div className="mt-2 -mx-1 grid sm:grid-cols-2 gap-2 max-h-[320px] overflow-y-auto p-1">
-            {items.map((p: any) => {
+            {items.map((p: InitiativeOption) => {
               const selected = initiativeId === p.id;
               return (
                 <button
@@ -1264,7 +1398,7 @@ function Step2({ types, toggleType }: { types: string[]; toggleType: (id: string
 }
 
 /* Step 3 */
-function Step3(props: any) {
+function Step3(props: Step3Props) {
   const { title, setTitle, description, setDescription, keyTakeaway, setKeyTakeaway, priority, setPriority, tags, setTags, tagInput, setTagInput, onAddTag } = props;
   return (
     <div>
@@ -1286,7 +1420,7 @@ function Step3(props: any) {
           <div>
             <Label className="text-[12px] font-semibold">Priority</Label>
             <div className="mt-1.5 flex gap-1.5">
-              {["Low", "Medium", "High", "Critical"].map((p) => (
+              {(["Low", "Medium", "High", "Critical"] as ContributionPriorityWire[]).map((p) => (
                 <button
                   key={p}
                   onClick={() => setPriority(p)}
@@ -1339,7 +1473,7 @@ function Step3(props: any) {
 }
 
 /* Step 4 */
-function Step4(props: any) {
+function Step4(props: Step4Props) {
   const { hasAny, showMetric, showRisk, showAI, showStory, showTestimonial, showAsset, metric, setMetric, risk, setRisk, ai, setAi, story, setStory, testimonial, setTestimonial, asset, setAsset, types, people } = props;
 
   if (!hasAny) {
@@ -1382,7 +1516,7 @@ function Step4(props: any) {
               <Field label="Risk description" full><Textarea value={risk.description} onChange={(e) => setRisk({ ...risk, description: e.target.value })} className="bg-white rounded-xl min-h-[80px]" /></Field>
               <Field label="Severity">
                 <div className="flex gap-1.5">
-                  {["Low", "Medium", "High", "Critical"].map((s) => (
+                  {(["Low", "Medium", "High", "Critical"] as RiskSeverityWire[]).map((s) => (
                     <button key={s} onClick={() => setRisk({ ...risk, severity: s })} className={cn("h-10 px-3 rounded-xl text-[12px] font-medium border", risk.severity === s ? "bg-amber-500 text-white border-transparent" : "bg-white border-black/5")}>
                       {s}
                     </button>
@@ -1480,7 +1614,7 @@ function Step4(props: any) {
   );
 }
 
-function SectionCard({ title, icon, gradient, children }: any) {
+function SectionCard({ title, icon, gradient, children }: SectionCardProps) {
   return (
     <div className="rounded-2xl bg-white/90 border border-black/5 overflow-hidden">
       <div className="px-4 py-3 flex items-center gap-2 border-b border-black/5">
@@ -1492,7 +1626,7 @@ function SectionCard({ title, icon, gradient, children }: any) {
   );
 }
 
-function Field({ label, children, full }: any) {
+function Field({ label, children, full }: FieldProps) {
   return (
     <div className={cn(full && "sm:col-span-2")}>
       <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</Label>
@@ -1502,7 +1636,7 @@ function Field({ label, children, full }: any) {
 }
 
 /* Step 5 */
-function Step5(props: any) {
+function Step5(props: Step5Props) {
   const {
     files,
     existingAttachments = [],
@@ -1641,7 +1775,7 @@ function Step5(props: any) {
 
         {links.length > 0 && (
           <div className="mt-3 space-y-2">
-            {links.map((l: any) => (
+            {links.map((l: LinkDraft) => (
               <div key={l.id} className="rounded-xl bg-white border border-black/5 p-3 flex items-center gap-3">
                 <div className="size-8 rounded-lg bg-gradient-to-br from-sky-500 to-cyan-500 grid place-items-center text-white">
                   <LinkIcon className="size-4" />
@@ -1663,7 +1797,7 @@ function Step5(props: any) {
 }
 
 /* Step 6 */
-function Step6(props: any) {
+function Step6(props: Step6Props) {
   const { contributors, filteredPeople, personQuery, setPersonQuery, onAdd, onRemove, onTogglePrimary, setContributors } = props;
   return (
     <div>
@@ -1684,7 +1818,7 @@ function Step6(props: any) {
           {filteredPeople.length === 0 ? (
             <div className="p-3 text-[12px] text-muted-foreground">No matches</div>
           ) : (
-            filteredPeople.map((p: any) => (
+            filteredPeople.map((p: PersonOption) => (
               <button
                 key={p.id}
                 onClick={() => onAdd(p.id)}
@@ -1705,7 +1839,7 @@ function Step6(props: any) {
       )}
 
       <div className="mt-5 space-y-2">
-        {contributors.map((c: any) => (
+        {contributors.map((c: ContributorDraft) => (
           <div key={c.id} className="rounded-xl bg-white border border-black/5 p-3 flex items-center gap-3">
             <div className="size-9 rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 grid place-items-center text-[11px] font-semibold text-white">
               {c.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
@@ -1717,7 +1851,7 @@ function Step6(props: any) {
             <Input
               value={c.area}
               onChange={(e) =>
-                setContributors(contributors.map((x: any) => (x.id === c.id ? { ...x, area: e.target.value } : x)))
+                setContributors(contributors.map((x: ContributorDraft) => (x.id === c.id ? { ...x, area: e.target.value } : x)))
               }
               placeholder="Responsibility area"
               className="h-9 w-40 bg-white rounded-lg text-[12px]"
@@ -1779,7 +1913,7 @@ function Step7({ visibility, toggle }: { visibility: string[]; toggle: (v: strin
 }
 
 /* Step 8 */
-function Step8(props: any) {
+function Step8(props: Step8Props) {
   const {
     initiativeName,
     workstream,
@@ -1829,7 +1963,7 @@ function Step8(props: any) {
         </ReviewCard>
         <ReviewCard title="Contributors" step={6} onEdit={onJumpTo}>
           <div className="flex flex-wrap gap-2">
-            {contributors.map((c: any) => (
+            {contributors.map((c: ContributorDraft) => (
               <div key={c.id} className="inline-flex items-center gap-1.5 text-[11px] bg-white border border-black/5 rounded-full px-2 py-0.5">
                 <span className="size-4 rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500" />
                 {c.name} {c.primary && <span className="text-[9px] text-indigo-600 font-bold">·PRIMARY</span>}
@@ -1853,7 +1987,7 @@ function Step8(props: any) {
   );
 }
 
-function ReviewCard({ title, step, onEdit, children }: any) {
+function ReviewCard({ title, step, onEdit, children }: ReviewCardProps) {
   return (
     <div className="rounded-xl bg-white border border-black/5 p-4">
       <div className="flex items-center justify-between mb-2">

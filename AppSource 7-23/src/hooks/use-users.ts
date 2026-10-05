@@ -3,11 +3,13 @@ import { apiFetch, isApiConfigured } from "@/lib/api-client";
 import { backendUserQueryKey, type BackendUser } from "./use-backend-user";
 import { useAuth } from "./use-auth";
 
+/** React Query cache key for the full user list. */
 export const usersQueryKey = ["users"] as const;
 
 /**
  * Everyone who has signed in at least once. These are the only people who can own or
  * sponsor an Initiative, because the Owner column is a foreign key onto this table.
+ * Disabled until the user is signed in and the API is configured.
  */
 export function useUsers() {
   const { isAuthenticated } = useAuth();
@@ -21,9 +23,10 @@ export function useUsers() {
 }
 
 /**
- * Sets a user's AppRole. The API only ever accepts this for the caller's own id — this
- * hook still takes a userId so the Team page's row-level "is this me?" check and the
- * write call share the same value, rather than trusting a separate assumption.
+ * Sets a user's AppRole, then refreshes the user list and the signed-in user's record.
+ *
+ * The API accepts this only for the caller's own id. The hook still takes a userId so the
+ * Team page's "is this me?" check and the write use the same value.
  */
 export function useUpdateAppRole() {
   const queryClient = useQueryClient();

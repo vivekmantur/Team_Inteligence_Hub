@@ -7,6 +7,7 @@ interface BarChartProps {
   format?: (n: number) => string;
 }
 
+/** Animated vertical bar chart drawn with d3; one bar per `data` item, re-rendered when inputs change. */
 export function BarChart({ data, height = 240, format }: BarChartProps) {
   const ref = useRef<SVGSVGElement | null>(null);
 
@@ -26,18 +27,18 @@ export function BarChart({ data, height = 240, format }: BarChartProps) {
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
     g.append("g")
-      .call(d3.axisLeft(y).ticks(4).tickSize(-iw).tickFormat(() => "") as any)
+      .call(d3.axisLeft(y).ticks(4).tickSize(-iw).tickFormat(() => ""))
       .call((sel) => sel.select(".domain").remove())
       .call((sel) => sel.selectAll("line").attr("stroke", "currentColor").attr("opacity", 0.08));
 
     g.append("g")
       .attr("transform", `translate(0,${ih})`)
-      .call(d3.axisBottom(x) as any)
+      .call(d3.axisBottom(x))
       .call((sel) => sel.select(".domain").remove())
       .call((sel) => sel.selectAll("text").attr("fill", "currentColor").attr("font-size", 10).attr("opacity", 0.7));
 
     g.append("g")
-      .call(d3.axisLeft(y).ticks(4).tickFormat((d) => (format ? format(d as number) : d3.format(".2s")(d as number))) as any)
+      .call(d3.axisLeft(y).ticks(4).tickFormat((d) => (format ? format(d as number) : d3.format(".2s")(d as number))))
       .call((sel) => sel.select(".domain").remove())
       .call((sel) => sel.selectAll("line").remove())
       .call((sel) => sel.selectAll("text").attr("fill", "currentColor").attr("font-size", 10).attr("opacity", 0.6));

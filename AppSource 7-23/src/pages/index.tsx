@@ -28,7 +28,7 @@ import {
   type WeeklySignalSeverity,
 } from "@/data/mock";
 
-/** Still mock: there's no scheduled-report concept in the Domain model yet. */
+/** Mock: the Domain model has no scheduled-report concept. */
 const leadershipReportsStat = attentionStats.find((s) => s.id === "reports")!;
 
 const statIcons = {
@@ -58,6 +58,11 @@ const statusBadge: Record<string, string> = {
   "Needs Attention": "bg-amber-500/10 text-amber-700",
 };
 
+/**
+ * Home ("My Attention") dashboard. Capacity, risk counts, open actions, My Initiatives, and
+ * the Highlights counts come from the real API. The leadership-reports stat, "This Week"
+ * signals, Recent Activity, and Upcoming Deadlines are mock data from `@/data/mock`.
+ */
 export default function HomePage() {
   const navigate = useNavigate();
   const { openAddContribution } = useAddContribution();

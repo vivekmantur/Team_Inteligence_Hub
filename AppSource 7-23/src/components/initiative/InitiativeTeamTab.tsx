@@ -33,6 +33,7 @@ import {
   Check,
   AlertTriangle,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useAddContribution } from "@/components/contribution/ContributionContext";
 import {
   Dialog,
@@ -56,6 +57,7 @@ interface Props {
   initiativeId: string;
 }
 
+/** Team tab for an Initiative: lists API-backed members with per-person stats and lets managers add, edit, and remove them. */
 export function InitiativeTeamTab({ initiativeId }: Props) {
   const {
     reassignTasks,
@@ -512,7 +514,7 @@ function MemberRow({
   );
 }
 
-function Stat({ icon: Icon, label, value }: { icon: any; label: string; value: number | string }) {
+function Stat({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: number | string }) {
   return (
     <div className="rounded-lg bg-white/70 border border-white/60 px-2 py-1.5 text-center">
       <div className="flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">

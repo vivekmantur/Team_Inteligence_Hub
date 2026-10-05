@@ -32,20 +32,27 @@ export type ActivityRecord = {
   createdTasks: ActivityCreatedTask[];
 };
 
+/** Body for creating an activity entry. */
 export type CreateActivityRequest = {
   activityMessage: string;
   autoCreateTaskEnabled: boolean;
   mentionedUserIds?: number[];
 };
 
+/** Body for editing an activity entry. */
 export type UpdateActivityRequest = {
   activityMessage: string;
   mentionedUserIds?: number[];
 };
 
+/** Builds the React Query cache key for one Initiative's activity feed. */
 export const activityQueryKey = (initiativeId: number) =>
   ["initiatives", initiativeId, "activity"] as const;
 
+/**
+ * Loads the activity feed for one Initiative. Disabled until the user is signed in, the
+ * API is configured, and an initiativeId is set.
+ */
 export function useActivityFeed(initiativeId: number | null) {
   const { isAuthenticated } = useAuth();
 
@@ -74,6 +81,9 @@ function useActivityRefresh(initiativeId: number | null) {
   };
 }
 
+/**
+ * Posts a new activity entry to the Initiative, then refreshes the feed, tasks, and team.
+ */
 export function useCreateActivity(initiativeId: number | null) {
   const refresh = useActivityRefresh(initiativeId);
 
@@ -87,6 +97,10 @@ export function useCreateActivity(initiativeId: number | null) {
   });
 }
 
+/**
+ * Replaces an activity entry's message and mentions (PUT), then refreshes the feed, tasks,
+ * and team.
+ */
 export function useUpdateActivity(initiativeId: number | null) {
   const refresh = useActivityRefresh(initiativeId);
 
@@ -103,6 +117,7 @@ export function useUpdateActivity(initiativeId: number | null) {
   });
 }
 
+/** Deletes an activity entry by id, then refreshes the feed, tasks, and team. */
 export function useDeleteActivity(initiativeId: number | null) {
   const refresh = useActivityRefresh(initiativeId);
 

@@ -11,6 +11,7 @@ import { useBackendUser } from "./use-backend-user";
  * this module's job so no component has to know the wire format.
  */
 export type TaskStatusWire = "NotStarted" | "InProgress" | "Blocked" | "Done";
+/** Task priority as the API sends it. */
 export type TaskPriorityWire = "High" | "Medium" | "Low";
 
 const TASK_STATUS_LABELS: Record<TaskStatusWire, string> = {
@@ -20,10 +21,12 @@ const TASK_STATUS_LABELS: Record<TaskStatusWire, string> = {
   Done: "Done",
 };
 
+/** Returns the display label for a task status, or the wire value if it has no label. */
 export const taskStatusToLabel = (wire: TaskStatusWire): string =>
   TASK_STATUS_LABELS[wire] ?? wire;
 
-export const taskStatusToWire = (label: string): TaskStatusWire => {
+/** Returns the wire value for a task status label, falling back to "NotStarted" when the label is unknown. */
+export const taskStatusToWire =(label: string): TaskStatusWire => {
   const match = (Object.keys(TASK_STATUS_LABELS) as TaskStatusWire[]).find(
     (key) => TASK_STATUS_LABELS[key] === label,
   );
@@ -46,6 +49,7 @@ export type TaskRecord = {
   updatedAt: string | null;
 };
 
+/** Body for creating or editing a task. */
 export type SaveTaskRequest = {
   title: string;
   assignedToUserId?: number | null;
@@ -54,9 +58,14 @@ export type SaveTaskRequest = {
   status?: TaskStatusWire;
 };
 
+/** Builds the React Query cache key for one Initiative's task list. */
 export const tasksQueryKey = (initiativeId: number) =>
   ["initiatives", initiativeId, "tasks"] as const;
 
+/**
+ * Loads one Initiative's tasks. Disabled until the user is signed in, the API is
+ * configured, and an initiativeId is set.
+ */
 export function useInitiativeTasks(initiativeId: number | null) {
   const { isAuthenticated } = useAuth();
 
@@ -73,8 +82,9 @@ export function useInitiativeTasks(initiativeId: number | null) {
  *
  * Tasks are only readable per-Initiative, so this fans the read out the same way
  * ContributionContext does for contributions: one query per Initiative, flattened and
- * filtered client-side. Fine at today's scale; an aggregate "my tasks" endpoint would be
- * the next step if the Initiative count grows past a few dozen.
+ * filtered client-side. This suits a few dozen Initiatives; beyond that, an aggregate
+ * "my tasks" endpoint is the better fit. The per-Initiative queries wait until the
+ * backend user has loaded, and the count is 0 until then.
  */
 export function useMyOpenTasksCount() {
   const { isAuthenticated } = useAuth();
@@ -124,6 +134,7 @@ function useTaskMutationRefresh(initiativeId: number | null) {
   };
 }
 
+/** Creates a task on the Initiative, then refreshes its tasks and team. */
 export function useCreateTask(initiativeId: number | null) {
   const refresh = useTaskMutationRefresh(initiativeId);
 
@@ -137,6 +148,7 @@ export function useCreateTask(initiativeId: number | null) {
   });
 }
 
+/** Replaces a task's fields (PUT), then refreshes the Initiative's tasks and team. */
 export function useUpdateTask(initiativeId: number | null) {
   const refresh = useTaskMutationRefresh(initiativeId);
 
@@ -150,6 +162,7 @@ export function useUpdateTask(initiativeId: number | null) {
   });
 }
 
+/** Deletes a task by id, then refreshes the Initiative's tasks and team. */
 export function useDeleteTask(initiativeId: number | null) {
   const refresh = useTaskMutationRefresh(initiativeId);
 

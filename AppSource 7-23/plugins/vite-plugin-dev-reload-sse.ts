@@ -7,14 +7,26 @@
  *  - CSS-only fast path (cache-bust stylesheets without full reload)
  */
 
-import type { Plugin, ViteDevServer, ModuleNode, HmrContext } from 'vite';
+import type { Plugin, ViteDevServer, ModuleNode, HmrContext, Connect, Update } from 'vite';
+import type { ServerResponse } from 'node:http';
 
 // Fixed constants
 const DEBOUNCE_MS = 80;
-// We need a heartbeat because some clients disconnect automatically after not receiving events for X seconds.
+// Heartbeats keep the connection open for clients that disconnect after a quiet period.
 const HEARTBEAT_MS = 30000;
 const SSE_PATH = '/__dev/reload';
 const CSS_EXTENSIONS = ['.css', '.scss', '.sass', '.less', '.styl', '.pcss'];
+
+/** The fields read from a build or HMR error; any of them may be missing. */
+type BuildErrorLike = { message?: string; stack?: string; plugin?: string; id?: string };
+
+/** A build error with the project path replaced by `<cwd>`. */
+interface NormalizedBuildError {
+  message: string;
+  stack: string;
+  plugin?: string;
+  id?: string;
+}
 
 interface PendingChange {
   file: string;
@@ -30,7 +42,7 @@ export default function devReload(): Plugin {
   let lastBuildDuration = 0;
 
   const pending = new Map<string, PendingChange>();
-  const clients = new Set<any>();
+  const clients = new Set<ServerResponse>();
   let heartbeatStarted = false;
   let errorHooksInstalled = false;
   const cwd = process.cwd();
@@ -43,7 +55,7 @@ export default function devReload(): Plugin {
   const isCSS = (file: string) =>
     CSS_EXTENSIONS.some(ext => file.toLowerCase().endsWith(ext));
 
-  function broadcast(obj: any) {
+  function broadcast(obj: unknown) {
     const data = `data: ${JSON.stringify(obj)}\n\n`;
     clients.forEach(res => {
       try { res.write(data); } catch { clients.delete(res); }
@@ -74,7 +86,8 @@ export default function devReload(): Plugin {
     pending.clear();
   }
 
-  function normalizeBuildError(err: any) {
+  /** Redacts the project path from an error and keeps only the fields the client logs. */
+  function normalizeBuildError(err: BuildErrorLike | null | undefined): NormalizedBuildError {
     return {
       message: (err?.message || String(err)).replaceAll(cwd, '<cwd>'),
       stack: (err?.stack || '').split('\n')
@@ -85,17 +98,22 @@ export default function devReload(): Plugin {
     };
   }
 
-  function recordBuildError(err: any) {
-    broadcast({ type: 'build-error', error: normalizeBuildError(err) });
+  // Receives whatever was thrown or rejected, so it is treated as error-like.
+  function recordBuildError(err: unknown) {
+    broadcast({ type: 'build-error', error: normalizeBuildError(err as BuildErrorLike) });
   }
 
   function interceptHMR() {
-    const ws: any = (server as any).ws;
+    // `send` is overloaded (an HMR payload object or a custom event name) and is
+    // reassigned below, so the patched server is typed loosely here.
+    const ws: any = server.ws;
     if (!ws || ws.__devReloadPatched) return;
     ws.__devReloadPatched = true;
     const originalSend = ws.send.bind(ws);
-    ws.send = (payload: any, clientsArg?: any) => {
-      try { originalSend(payload, clientsArg); } catch {}
+    ws.send = (payload: any, clientsArg?: unknown) => {
+      try { originalSend(payload, clientsArg); } catch {
+        // Vite's own send failing must not stop the mirror below.
+      }
       try {
         if (!payload || !payload.type) return;
         switch (payload.type) {
@@ -103,7 +121,7 @@ export default function devReload(): Plugin {
             broadcast({
               type: 'hmr-update',
               time: Date.now(),
-              updates: (payload.updates || []).map((u: any) => ({
+              updates: (payload.updates || []).map((u: Update & { acceptedPaths?: string[] }) => ({
                 type: u.type,
                 path: u.path ? u.path.replaceAll(cwd, '<cwd>') : undefined,
                 accepted: u.acceptedPath ?? u.acceptedPaths ?? undefined,
@@ -120,7 +138,7 @@ export default function devReload(): Plugin {
             break;
           case 'error': {
             const now = Date.now();
-            const norm = normalizeBuildError(payload.err || payload.error || payload);
+            const norm = normalizeBuildError((payload.err || payload.error || payload) as BuildErrorLike);
             const sig = `${norm.plugin || ''}|${norm.id || ''}|${norm.message}`;
             if (sig !== lastHmrErrorSig || now - lastHmrErrorTime > HMR_ERROR_DEDUPE_WINDOW_MS) {
               lastHmrErrorSig = sig;
@@ -136,8 +154,8 @@ export default function devReload(): Plugin {
           default:
             broadcast({ type: 'hmr-message', time: Date.now(), message: payload.type });
         }
-      } catch (e:any) {
-        broadcast({ type: 'ws-error', time: Date.now(), error: { message: e?.message || String(e) } });
+      } catch (e) {
+        broadcast({ type: 'ws-error', time: Date.now(), error: { message: (e as Error | undefined)?.message || String(e) } });
       }
     };
   }
@@ -153,9 +171,11 @@ export default function devReload(): Plugin {
         try {
           process.on('uncaughtException', recordBuildError);
           process.on('unhandledRejection', recordBuildError);
-        } catch {}
+        } catch {
+          // Hooks are optional; without them build errors are simply not mirrored.
+        }
       }
-      server.middlewares.use(SSE_PATH, (_req: any, res: any) => {
+      server.middlewares.use(SSE_PATH, (_req: Connect.IncomingMessage, res: ServerResponse) => {
         res.writeHead(200, {
           'Content-Type': 'text/event-stream',
           'Cache-Control': 'no-cache',

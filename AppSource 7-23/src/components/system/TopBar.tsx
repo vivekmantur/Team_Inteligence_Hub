@@ -5,6 +5,7 @@ import { NotificationsBell } from "./NotificationsBell";
 import { UserMenu } from "./UserMenu";
 import { useNavigate } from "react-router-dom";
 
+/** Sticky header with the search input, notifications bell, Ask Copilot button, and user menu. */
 export function TopBar() {
   const navigate = useNavigate();
   return (
