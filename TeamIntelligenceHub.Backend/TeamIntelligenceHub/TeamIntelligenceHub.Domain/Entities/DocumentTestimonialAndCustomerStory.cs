@@ -28,10 +28,10 @@ public class DocumentTestimonialAndCustomerStory
 
     public DocumentInsightType Type { get; set; }
 
-    /// <summary>Shared by both shapes — a quoted line of text.</summary>
+    /// <summary>A quoted line of text. Used by both shapes.</summary>
     public string? Quote { get; set; }
 
-    /// <summary>Customer name (CustomerStory) or speaker name (Testimonial).</summary>
+    /// <summary>The customer's name. CustomerStory only; testimonials use SpeakerName.</summary>
     public string? CustomerName { get; set; }
 
     public string? Summary { get; set; }

@@ -3,6 +3,7 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Application.DTOs;
 
+/// <summary>Payload for setting the caller's own AppRole.</summary>
 public class UpdateAppRoleRequestDto
 {
     [Required]

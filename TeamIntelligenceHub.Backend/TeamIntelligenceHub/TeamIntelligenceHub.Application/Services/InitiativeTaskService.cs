@@ -8,6 +8,9 @@ using TeamIntelligenceHub.Domain.Enums;
 
 namespace TeamIntelligenceHub.Application.Services;
 
+/// <summary>
+/// Manages tasks on an Initiative and enrolls each assignee on the Initiative's team.
+/// </summary>
 public class InitiativeTaskService : IInitiativeTaskService
 {
     /// <summary>

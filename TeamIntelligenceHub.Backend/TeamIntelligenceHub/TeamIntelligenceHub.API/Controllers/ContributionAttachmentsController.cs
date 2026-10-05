@@ -10,18 +10,18 @@ namespace TeamIntelligenceHub.API.Controllers;
 /// Files attached to a contribution.
 /// </summary>
 /// <remarks>
-/// The browser posts the file here and the API streams it to Blob Storage, so the
-/// container stays private and every read goes through an authenticated endpoint.
-///
-/// Separate from the create call on purpose: a file needs a ContributionId to hang off.
-/// The wizard's Save draft button exists to produce one, so uploads have somewhere to go
-/// before the contribution is submitted.
+/// The API streams uploads to file storage, so storage stays private and every read goes
+/// through an authenticated endpoint. Uploads are separate from create because a file needs
+/// a ContributionId; the wizard's Save draft button produces one before submission.
 /// </remarks>
 [ApiController]
 [Authorize]
 [Route("api/contributions/{contributionId:int}")]
 public class ContributionAttachmentsController : ControllerBase
 {
+    /// <summary>Extra request-body allowance on top of the file limit, for multipart framing.</summary>
+    private const long MultipartOverheadBytes = 1024 * 1024;
+
     private readonly IContributionAttachmentService _attachmentService;
     private readonly ILogger<ContributionAttachmentsController> _logger;
 
@@ -35,7 +35,7 @@ public class ContributionAttachmentsController : ControllerBase
 
     /// <summary>Uploads one file against a contribution.</summary>
     [HttpPost("attachments")]
-    [RequestSizeLimit(ContributionAttachment.MaxFileSizeBytes + 1024 * 1024)]
+    [RequestSizeLimit(ContributionAttachment.MaxFileSizeBytes + MultipartOverheadBytes)]
     public async Task<IActionResult> Upload(
         int contributionId,
         IFormFile file,
@@ -113,6 +113,7 @@ public class ContributionAttachmentsController : ControllerBase
         }
     }
 
+    /// <summary>Deletes an attachment from the contribution.</summary>
     [HttpDelete("attachments/{attachmentId:int}")]
     public async Task<IActionResult> Remove(
         int contributionId,

@@ -3,8 +3,13 @@ using TeamIntelligenceHub.Domain.Enums;
 
 namespace TeamIntelligenceHub.Application.Interfaces.Repositories;
 
+/// <summary>
+/// Stores and loads testimonials and customer stories extracted from contribution
+/// attachments.
+/// </summary>
 public interface IDocumentTestimonialAndCustomerStoryRepository
 {
+    /// <summary>Inserts one extracted row and returns it with its generated id.</summary>
     Task<DocumentTestimonialAndCustomerStory> AddAsync(
         DocumentTestimonialAndCustomerStory row);
 

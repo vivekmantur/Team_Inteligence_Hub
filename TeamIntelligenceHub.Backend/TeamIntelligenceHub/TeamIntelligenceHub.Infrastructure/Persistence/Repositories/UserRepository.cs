@@ -4,6 +4,9 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Repositories;
 
+/// <summary>
+/// EF Core implementation of IUserRepository, including lookup by Entra object ID.
+/// </summary>
 public class UserRepository : IUserRepository
 {
     private readonly TeamIntelligenceHubDbContext _context;

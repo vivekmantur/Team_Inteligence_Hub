@@ -6,6 +6,7 @@ using TeamIntelligenceHub.Application.Interfaces.Services;
 
 namespace TeamIntelligenceHub.API.Controllers;
 
+/// <summary>Lists, reads, creates, updates, and deletes Initiatives, and serves their readiness insights.</summary>
 [ApiController]
 [Authorize]
 [Route("api/[controller]")]
@@ -22,6 +23,7 @@ public class InitiativesController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>Returns all Initiatives.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -39,6 +41,7 @@ public class InitiativesController : ControllerBase
         return Ok(await _initiativeService.GetReadinessInsightsAsync());
     }
 
+    /// <summary>Returns the Initiative with the given id, or 404 when it does not exist.</summary>
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {

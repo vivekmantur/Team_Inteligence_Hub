@@ -2,10 +2,15 @@
 
 namespace TeamIntelligenceHub.Application.Interfaces.Repositories;
 
+/// <summary>
+/// Stores and loads Initiatives.
+/// </summary>
 public interface IInitiativeRepository
 {
+    /// <summary>Loads one Initiative with its Owner and Executive Sponsor, or null when it does not exist.</summary>
     Task<Initiative?> GetByIdAsync(int id);
 
+    /// <summary>Returns every Initiative with its Owner and Executive Sponsor.</summary>
     Task<List<Initiative>> GetAllAsync();
 
     /// <summary>
@@ -21,10 +26,16 @@ public interface IInitiativeRepository
     /// </summary>
     Task<bool> NameExistsAsync(string name, int? excludeInitiativeId = null);
 
+    /// <summary>Inserts a new Initiative and returns it with its generated id.</summary>
     Task<Initiative> AddAsync(Initiative initiative);
 
+    /// <summary>Saves changes to an existing Initiative.</summary>
     Task UpdateAsync(Initiative initiative);
 
+    /// <summary>
+    /// Deletes the Initiative. Its database children cascade; stored files do not, so the
+    /// caller removes those first.
+    /// </summary>
     Task RemoveAsync(Initiative initiative);
 
     /// <summary>

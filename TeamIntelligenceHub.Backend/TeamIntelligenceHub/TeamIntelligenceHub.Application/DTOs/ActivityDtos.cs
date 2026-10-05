@@ -42,6 +42,7 @@ public class UpdateActivityRequestDto
     public List<int>? MentionedUserIds { get; set; }
 }
 
+/// <summary>A person mentioned in a post.</summary>
 public class ActivityMentionDto
 {
     public int MentionedUserId { get; set; }
@@ -61,6 +62,7 @@ public class ActivityCreatedTaskDto
     public string? AssignedToDisplayName { get; set; }
 }
 
+/// <summary>One post on an Initiative's activity feed, with its mentions and the tasks it raised.</summary>
 public class ActivityResponseDto
 {
     public int Id { get; set; }

@@ -7,6 +7,9 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Application.Services;
 
+/// <summary>
+/// Stores, serves, and removes files attached to task comments.
+/// </summary>
 public class TaskCommentAttachmentService : ITaskCommentAttachmentService
 {
     /// <summary>

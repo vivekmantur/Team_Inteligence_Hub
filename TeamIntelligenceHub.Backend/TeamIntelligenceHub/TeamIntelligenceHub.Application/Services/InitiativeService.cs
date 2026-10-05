@@ -8,6 +8,10 @@ using TeamIntelligenceHub.Domain.Enums;
 
 namespace TeamIntelligenceHub.Application.Services;
 
+/// <summary>
+/// Validates and saves Initiatives, deletes them with their stored files, and computes
+/// the Insights readiness aggregates.
+/// </summary>
 public class InitiativeService : IInitiativeService
 {
     private readonly IInitiativeRepository _initiativeRepository;
@@ -170,10 +174,9 @@ public class InitiativeService : IInitiativeService
     }
 
     /// <summary>
-    /// Open to any signed-in user for now — there is no per-Initiative ownership gate on
-    /// this endpoint, matching the "open access" decision for this feature. If tighter
-    /// access control is wanted later, it should apply consistently across every
-    /// Initiative-scoped write, not just this one.
+    /// Open to any signed-in user: there is no per-Initiative ownership gate, by the
+    /// "open access" decision for this feature. Any tighter access control should apply
+    /// consistently across every Initiative-scoped write, not just this one.
     /// </summary>
     public async Task<InitiativeResponseDto> UpdateAsync(
         int id, UpdateInitiativeRequestDto request)
@@ -305,12 +308,10 @@ public class InitiativeService : IInitiativeService
     /// is needed for those.
     /// </summary>
     /// <remarks>
-    /// Known gap: this does not remove the matching chunks from the Azure AI Search
-    /// index. No deletion-detection policy is configured on the indexer, and
-    /// IVectorSearchClient exposes no delete capability today — closing this needs the
-    /// index's real key/document-id scheme, which is set up in the Azure portal and is
-    /// not visible from this repository. Deleted attachments' vector chunks will remain
-    /// searchable until that follow-up lands.
+    /// Known limitation: the matching chunks are not removed from the search index, so
+    /// deleted attachments' content remains searchable. IVectorSearchClient exposes no
+    /// delete operation, and the index's document-key scheme is configured outside this
+    /// repository.
     /// </remarks>
     public async Task RemoveAsync(int id, CancellationToken cancellationToken = default)
     {
@@ -318,9 +319,9 @@ public class InitiativeService : IInitiativeService
 
         var contributions = await _contributionRepository.GetByInitiativeIdAsync(id);
 
-        // Blob objects do not cascade — the same reasoning ContributionService.RemoveAsync
-        // applies to one Contribution's attachments, walked here across every
-        // Contribution this Initiative has.
+        // Stored files do not cascade with their rows, so every Contribution's attachments
+        // are deleted from storage first; otherwise they would linger with nothing
+        // pointing at them.
         foreach (var contribution in contributions)
         {
             foreach (var attachment in contribution.Attachments)

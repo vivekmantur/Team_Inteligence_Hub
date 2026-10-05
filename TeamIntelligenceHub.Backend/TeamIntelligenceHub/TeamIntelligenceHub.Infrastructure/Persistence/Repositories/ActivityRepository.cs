@@ -4,6 +4,10 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Repositories;
 
+/// <summary>
+/// EF Core implementation of IActivityRepository, loading posts with their author, mentions,
+/// and raised tasks.
+/// </summary>
 public class ActivityRepository : IActivityRepository
 {
     private readonly TeamIntelligenceHubDbContext _context;

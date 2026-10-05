@@ -1,5 +1,6 @@
 ﻿namespace TeamIntelligenceHub.Application.DTOs;
 
+/// <summary>One person's membership on an Initiative's team.</summary>
 public class InitiativeMemberResponseDto
 {
     public int Id { get; set; }

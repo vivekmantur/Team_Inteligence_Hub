@@ -8,6 +8,10 @@ using TeamIntelligenceHub.Domain.Enums;
 
 namespace TeamIntelligenceHub.Application.Services;
 
+/// <summary>
+/// Validates and saves contributions with their whole graph, and builds the Stories &amp;
+/// Evidence cards from submitted and document-extracted content.
+/// </summary>
 public class ContributionService : IContributionService
 {
     /// <summary>
@@ -447,7 +451,7 @@ public class ContributionService : IContributionService
     /// Puts a credited person on the Initiative's team if they are not already on it.
     /// </summary>
     /// <remarks>
-    /// Matches what assigning a task already does. Crediting somebody on an Initiative's
+    /// Mirrors what assigning a task does. Crediting somebody on an Initiative's
     /// work makes them part of it, and the Team tab should say so without anyone adding
     /// them by hand. The unique index on (InitiativeId, UserId) is the real guarantee
     /// against duplicates; this check only avoids attempting an insert that would
@@ -479,7 +483,7 @@ public class ContributionService : IContributionService
     /// Refuses a detail section whose type was not selected.
     /// </summary>
     /// <remarks>
-    /// This is the invariant the four separate tables exist to protect. Accepting a
+    /// This is the invariant the separate detail tables exist to protect. Accepting a
     /// metric on a Progress Update would write a row nothing ever reads, because every
     /// reader keys off Types.
     /// </remarks>

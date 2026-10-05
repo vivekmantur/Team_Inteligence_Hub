@@ -7,6 +7,10 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Application.Services;
 
+/// <summary>
+/// Reads users, provisions the signed-in caller's local row from their token claims, and
+/// lets a user set their own AppRole.
+/// </summary>
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;

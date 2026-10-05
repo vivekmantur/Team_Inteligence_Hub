@@ -8,6 +8,10 @@ using TeamIntelligenceHub.Application.Interfaces;
 
 namespace TeamIntelligenceHub.Infrastructure.AI;
 
+/// <summary>
+/// Implements IEmbeddingClient by generating a text's embedding vector with the configured
+/// Azure OpenAI embedding deployment.
+/// </summary>
 public class AzureOpenAiEmbeddingClient : IEmbeddingClient
 {
     private readonly AzureOpenAiOptions _options;

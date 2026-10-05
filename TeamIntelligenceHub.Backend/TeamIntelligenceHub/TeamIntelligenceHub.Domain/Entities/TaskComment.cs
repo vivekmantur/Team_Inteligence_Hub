@@ -32,7 +32,7 @@ public class TaskComment
 
     public InitiativeTask Task { get; set; } = null!;
 
-    /// <summary>Who wrote it.</summary>
+    /// <summary>The user who authored the comment, referenced by UserId.</summary>
     public User User { get; set; } = null!;
 
     public TaskComment? ParentComment { get; set; }

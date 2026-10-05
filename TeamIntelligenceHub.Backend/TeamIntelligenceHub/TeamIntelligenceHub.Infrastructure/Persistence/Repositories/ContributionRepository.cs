@@ -5,6 +5,10 @@ using TeamIntelligenceHub.Domain.Enums;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Repositories;
 
+/// <summary>
+/// EF Core implementation of IContributionRepository, covering contributions with their
+/// contributors, links, attachments, and conditional detail sections.
+/// </summary>
 public class ContributionRepository : IContributionRepository
 {
     private readonly TeamIntelligenceHubDbContext _context;

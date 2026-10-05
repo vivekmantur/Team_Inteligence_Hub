@@ -6,6 +6,10 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Application.Services;
 
+/// <summary>
+/// Manages an Initiative's team memberships and reports each member's allocation across
+/// every Initiative.
+/// </summary>
 public class InitiativeMemberService : IInitiativeMemberService
 {
     /// <summary>

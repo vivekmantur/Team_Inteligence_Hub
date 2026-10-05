@@ -108,6 +108,7 @@ public sealed class ContentGenerationTurnDto
 // Responses
 // ---------------------------------------------------------------------------
 
+/// <summary>The generated content for one Content Studio request.</summary>
 public class ContentGenerationResponseDto
 {
     public string Content { get; set; } = null!;
@@ -117,18 +118,18 @@ public class ContentGenerationResponseDto
     public int InitiativeId { get; set; }
 
     /// <summary>
-    /// Always false in this implementation. No format retrieves attached documents yet —
-    /// Blog and Case Study generate from structured fields only until Initiative-scoped
-    /// RAG ships as its own follow-up feature.
+    /// Always false: no format retrieves attached documents, and Blog and Case Study
+    /// generate from structured fields only. Initiative-scoped document retrieval is a
+    /// separate feature.
     /// </summary>
     public bool UsedDocumentRetrieval { get; set; }
 
-    /// <summary>Always 0 in this implementation, for the same reason as UsedDocumentRetrieval.</summary>
+    /// <summary>Always 0, for the same reason as UsedDocumentRetrieval.</summary>
     public int SourceCount { get; set; }
 
     /// <summary>
-    /// Null until content persistence is separately approved — there is no stored row for
-    /// this generation to be an id of yet.
+    /// Always null: generated content is not persisted, so there is no stored row for
+    /// this generation to identify.
     /// </summary>
     public string? GenerationId { get; set; }
 }

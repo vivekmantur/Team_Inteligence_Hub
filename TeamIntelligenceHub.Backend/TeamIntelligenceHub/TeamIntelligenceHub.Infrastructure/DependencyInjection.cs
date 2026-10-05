@@ -12,6 +12,10 @@ using TeamIntelligenceHub.Infrastructure.Storage;
 
 namespace TeamIntelligenceHub.Infrastructure;
 
+/// <summary>
+/// Registers the database context, repositories, application services, file storage, queue,
+/// and Azure AI clients with the service collection.
+/// </summary>
 public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
@@ -56,8 +60,7 @@ public static class DependencyInjection
         services.AddScoped<
             IContributionAttachmentService, ContributionAttachmentService>();
 
-        // Structured-data only for now — no Azure OpenAI dependency yet, unlike
-        // ICopilotService below. That lands in a later slice.
+        // Generates content through IChatCompletionClient, which is registered below.
         services.AddScoped<IContentGenerationService, ContentGenerationService>();
 
         // Bound from the "BlobStorage" section, which resolves from appsettings.json,
@@ -82,10 +85,10 @@ public static class DependencyInjection
         services.AddSingleton<IChatCompletionClient, AzureOpenAiChatClient>();
         services.AddScoped<ICopilotService, CopilotService>();
 
-        // Table/data-access only. The actual extraction workflow (search, prompting,
-        // parsing) lives in the standalone TestimonialAndCustomerStoryExtractionFunction
-        // project, not here — this repository backs ContributionService's read side for
-        // the Stories & Evidence page's "Extracted from documents" section.
+        // Data access only. The extraction workflow (search, prompting, parsing) lives in
+        // the standalone TestimonialAndCustomerStoryExtractionFunction project. This
+        // repository backs ContributionService's read side for the Stories & Evidence
+        // page's "Extracted from documents" section.
         services.AddScoped<
             IDocumentTestimonialAndCustomerStoryRepository,
             DocumentTestimonialAndCustomerStoryRepository>();

@@ -9,7 +9,8 @@ namespace TeamIntelligenceHub.Infrastructure.Persistence;
 /// </summary>
 /// <remarks>
 /// Without this, EF constructs the context by running the API's Program.cs, which means
-/// migrations fail whenever the Entra settings are absent — unrelated to the database.
+/// migrations fail whenever the Entra settings are absent, though they have nothing to
+/// do with the database.
 /// This reads only what a migration actually needs: the connection string.
 /// </remarks>
 public class DesignTimeDbContextFactory

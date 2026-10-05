@@ -6,6 +6,7 @@ using TeamIntelligenceHub.Application.Interfaces.Services;
 
 namespace TeamIntelligenceHub.API.Controllers;
 
+/// <summary>Lists users, returns the signed-in user, and updates a user's AppRole.</summary>
 [ApiController]
 [Authorize]
 [Route("api/[controller]")]
@@ -22,6 +23,7 @@ public class UsersController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>Returns all users.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -57,6 +59,7 @@ public class UsersController : ControllerBase
         }
     }
 
+    /// <summary>Returns the user with the given id, or 404 when it does not exist.</summary>
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {

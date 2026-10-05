@@ -7,6 +7,10 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Application.Services;
 
+/// <summary>
+/// Manages posts on an Initiative's activity feed, including their mentions and the
+/// tasks a post can raise for the people it mentions.
+/// </summary>
 public class ActivityService : IActivityService
 {
     /// <summary>

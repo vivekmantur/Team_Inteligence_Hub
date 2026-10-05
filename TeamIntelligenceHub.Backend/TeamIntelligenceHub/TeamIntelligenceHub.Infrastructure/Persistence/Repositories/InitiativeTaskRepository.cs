@@ -4,6 +4,10 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Repositories;
 
+/// <summary>
+/// EF Core implementation of IInitiativeTaskRepository, loading tasks with their assignee and
+/// creator.
+/// </summary>
 public class InitiativeTaskRepository : IInitiativeTaskRepository
 {
     private readonly TeamIntelligenceHubDbContext _context;

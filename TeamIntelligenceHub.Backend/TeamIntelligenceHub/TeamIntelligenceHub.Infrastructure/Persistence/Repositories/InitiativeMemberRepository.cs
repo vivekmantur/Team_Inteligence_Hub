@@ -4,6 +4,10 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Repositories;
 
+/// <summary>
+/// EF Core implementation of IInitiativeMemberRepository, including each person's total
+/// allocation across Initiatives.
+/// </summary>
 public class InitiativeMemberRepository : IInitiativeMemberRepository
 {
     private readonly TeamIntelligenceHubDbContext _context;
@@ -35,7 +39,7 @@ public class InitiativeMemberRepository : IInitiativeMemberRepository
         return await _context.InitiativeMembers
             .Where(x => userIds.Contains(x.UserId))
             .GroupBy(x => x.UserId)
-            // Null means "not tracked" for that one row, not "0% on that Initiative" —
+            // Null means "not tracked" for that one row, not "0% on that Initiative",
             // but a sum has to treat it as something, and 0 is the only value that
             // doesn't overstate a person's real workload.
             .Select(g => new { UserId = g.Key, Total = g.Sum(x => x.Allocation ?? 0) })

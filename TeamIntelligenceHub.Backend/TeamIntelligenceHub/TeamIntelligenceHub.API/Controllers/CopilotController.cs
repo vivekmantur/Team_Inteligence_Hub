@@ -7,7 +7,7 @@ using TeamIntelligenceHub.Application.Interfaces.Services;
 namespace TeamIntelligenceHub.API.Controllers;
 
 /// <summary>
-/// Answers questions grounded on the indexed corpus in Azure AI Search.
+/// Answers questions grounded on the indexed search corpus.
 /// </summary>
 [ApiController]
 [Authorize]
@@ -25,9 +25,10 @@ public class CopilotController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>Answers a question, or returns 502 when a Copilot provider is unavailable.</summary>
     [HttpPost("ask")]
-    public async Task<IActionResult> Ask( 
-        [FromBody] CopilotQuestionRequestDto request,   
+    public async Task<IActionResult> Ask(
+        [FromBody] CopilotQuestionRequestDto request,
         CancellationToken cancellationToken)
     {
         try

@@ -4,11 +4,11 @@ namespace TeamIntelligenceHub.Domain.Entities;
 /// Metadata for a file attached to a contribution.
 /// </summary>
 /// <remarks>
-/// Mirrors TaskCommentAttachment column for column, so the existing IFileStorage
-/// abstraction and download endpoint carry over unchanged. The file itself lives in Azure
-/// Blob Storage; BlobName is the key within the container, kept separate from FileName so
-/// the stored object can be named safely and uniquely without losing what the person
-/// called it.
+/// Mirrors TaskCommentAttachment's columns and limits, with ContributionId in place of
+/// TaskCommentId, so both attachment kinds share the same IFileStorage abstraction. The
+/// file itself lives in Azure Blob Storage; BlobName is the key within the container, kept
+/// separate from FileName so the stored object can be named safely and uniquely without
+/// losing what the person called it.
 /// </remarks>
 public class ContributionAttachment
 {

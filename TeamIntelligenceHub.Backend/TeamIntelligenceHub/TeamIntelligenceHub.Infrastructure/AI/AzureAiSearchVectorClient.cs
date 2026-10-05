@@ -8,6 +8,10 @@ using TeamIntelligenceHub.Application.Interfaces;
 
 namespace TeamIntelligenceHub.Infrastructure.AI;
 
+/// <summary>
+/// Implements IVectorSearchClient by running a vector query, with optional search text, against
+/// the configured Azure AI Search index, optionally filtered to one source document.
+/// </summary>
 public class AzureAiSearchVectorClient : IVectorSearchClient
 {
     private readonly AzureAiSearchOptions _options;

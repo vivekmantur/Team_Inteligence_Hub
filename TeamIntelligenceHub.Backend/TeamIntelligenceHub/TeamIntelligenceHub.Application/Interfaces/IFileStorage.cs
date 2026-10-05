@@ -4,15 +4,10 @@ namespace TeamIntelligenceHub.Application.Interfaces;
 /// Which body of files an operation concerns.
 /// </summary>
 /// <remarks>
-/// Named in domain terms rather than as a container name, so the Application layer stays
-/// unaware that Azure Blob Storage is behind it. Infrastructure maps each area to a real
-/// container.
-///
-/// The areas are separate containers rather than folders in one, because the two things
-/// that will distinguish them are both container-scoped in Azure: role assignments can be
-/// scoped to a container but not to a blob prefix, and an AI Search indexer is configured
-/// against a container. Contribution evidence is meant to ground Copilot; task comment
-/// chatter is not.
+/// Named in domain terms so the Application layer stays storage-agnostic; Infrastructure
+/// maps each area to its own container. Separate containers rather than folders, because
+/// access control and search indexing are both scoped per container: contribution
+/// evidence grounds Copilot, task comment chatter does not.
 /// </remarks>
 public enum FileStorageArea
 {

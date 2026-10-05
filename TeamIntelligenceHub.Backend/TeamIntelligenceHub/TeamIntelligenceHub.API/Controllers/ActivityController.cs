@@ -45,6 +45,7 @@ public class ActivityController : ControllerBase
         }
     }
 
+    /// <summary>Posts an activity to the Initiative's feed and returns it with 201 Created.</summary>
     [HttpPost]
     public async Task<IActionResult> Create(
         int initiativeId,
@@ -72,6 +73,7 @@ public class ActivityController : ControllerBase
         }
     }
 
+    /// <summary>Updates an activity post on the Initiative's feed.</summary>
     [HttpPut("{activityId:int}")]
     public async Task<IActionResult> Update(
         int initiativeId,

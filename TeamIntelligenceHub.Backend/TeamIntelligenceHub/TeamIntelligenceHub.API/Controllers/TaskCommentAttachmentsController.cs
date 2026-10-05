@@ -10,14 +10,17 @@ namespace TeamIntelligenceHub.API.Controllers;
 /// Files attached to comments on a task.
 /// </summary>
 /// <remarks>
-/// The browser posts the file here and the API streams it to Blob Storage, so the
-/// container stays private and every read goes through an authenticated endpoint.
+/// The browser posts the file here and the API streams it to file storage, so storage
+/// stays private and every read goes through an authenticated endpoint.
 /// </remarks>
 [ApiController]
 [Authorize]
 [Route("api/tasks/{taskId:int}")]
 public class TaskCommentAttachmentsController : ControllerBase
 {
+    /// <summary>Extra request-body allowance on top of the file limit, for multipart framing.</summary>
+    private const long MultipartOverheadBytes = 1024 * 1024;
+
     private readonly ITaskCommentAttachmentService _attachmentService;
     private readonly ILogger<TaskCommentAttachmentsController> _logger;
 
@@ -31,7 +34,7 @@ public class TaskCommentAttachmentsController : ControllerBase
 
     /// <summary>Uploads one file against a comment.</summary>
     [HttpPost("comments/{commentId:int}/attachments")]
-    [RequestSizeLimit(TaskCommentAttachment.MaxFileSizeBytes + 1024 * 1024)]
+    [RequestSizeLimit(TaskCommentAttachment.MaxFileSizeBytes + MultipartOverheadBytes)]
     public async Task<IActionResult> Upload(
         int taskId,
         int commentId,
@@ -107,6 +110,7 @@ public class TaskCommentAttachmentsController : ControllerBase
         }
     }
 
+    /// <summary>Deletes an attachment from one of the task's comments.</summary>
     [HttpDelete("attachments/{attachmentId:int}")]
     public async Task<IActionResult> Remove(
         int taskId,

@@ -90,10 +90,9 @@ builder.Services.AddAuthorization();
 builder.Services.AddInfrastructure(
     builder.Configuration);
 
-// Lets the Swagger UI "Authorize" button run the same Authorization Code + PKCE flow a
-// real client would, instead of testers having to mint a bearer token by hand. The scope
-// must match one exposed under "Expose an API" on the AzureAd:ClientId app registration;
-// override AzureAd:SwaggerScope in user secrets if it is not the default "access_as_user".
+// Lets Swagger's "Authorize" button run the Authorization Code + PKCE flow a real client
+// uses, so testers need not mint tokens by hand. The scope must be exposed by the
+// AzureAd:ClientId app registration; set AzureAd:SwaggerScope to override "access_as_user".
 var tenantId = azureAd["TenantId"]!;
 var apiClientId = azureAd["ClientId"]!;
 var swaggerScope = azureAd["SwaggerScope"] ?? $"api://{apiClientId}/access_as_user";
@@ -132,14 +131,9 @@ builder.Services.AddSwaggerGen(options =>
         }] = new[] { swaggerScope }
     });
 
-    // Alternative to the oauth2 flow above for testers who already hold a token (e.g.
-    // acquired via the SPA and copied out of the browser) — pastes straight into the
-    // Authorize dialog with no redirect involved. This is a second way to *supply* a
-    // token to Swagger's "Try it out", not a second way to authenticate: the API still
-    // validates every request the same way regardless of which route the token came
-    // from. A separate AddSecurityRequirement call (rather than adding this scheme to
-    // the requirement above) makes the two options alternatives in the Authorize
-    // dialog rather than both being required at once.
+    // Lets testers paste a token they already hold (e.g. copied from the SPA) instead of
+    // running the oauth2 flow; the API validates it the same way either way. A separate
+    // AddSecurityRequirement makes the two schemes alternatives rather than both required.
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",

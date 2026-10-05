@@ -52,6 +52,7 @@ public class ContributionsController : ControllerBase
         }
     }
 
+    /// <summary>Creates a contribution on the Initiative and returns it with 201 Created.</summary>
     [HttpPost("initiatives/{initiativeId:int}/contributions")]
     public async Task<IActionResult> Create(
         int initiativeId,
@@ -79,6 +80,7 @@ public class ContributionsController : ControllerBase
         }
     }
 
+    /// <summary>Returns the contribution with the given id, or 404 when it does not exist.</summary>
     [HttpGet("contributions/{contributionId:int}")]
     public async Task<IActionResult> GetById(int contributionId)
     {

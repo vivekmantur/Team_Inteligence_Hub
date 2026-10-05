@@ -4,6 +4,10 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Repositories;
 
+/// <summary>
+/// EF Core implementation of IInitiativeRepository, loading Initiatives with their owner and
+/// executive sponsor.
+/// </summary>
 public class InitiativeRepository : IInitiativeRepository
 {
     private readonly TeamIntelligenceHubDbContext _context;
@@ -72,7 +76,7 @@ public class InitiativeRepository : IInitiativeRepository
     public async Task RemoveAsync(Initiative initiative)
     {
         // Contributions, InitiativeTasks, Activities, and InitiativeMembers all cascade
-        // in the database — the caller is responsible for anything cascade delete does
+        // in the database; the caller is responsible for anything cascade delete does
         // not reach, such as blob attachments.
         _context.Initiatives.Remove(initiative);
 

@@ -8,7 +8,7 @@ namespace TeamIntelligenceHub.Infrastructure.Storage;
 /// <remarks>
 /// Values resolve through IConfiguration, so appsettings.json, user secrets, and
 /// environment variables all work without a code change. Supply either a connection
-/// string, or an AccountUri to authenticate with a managed identity instead — the
+/// string, or an AccountUri to authenticate with a managed identity instead; the
 /// connection string wins when both are present.
 /// </remarks>
 public class BlobStorageOptions

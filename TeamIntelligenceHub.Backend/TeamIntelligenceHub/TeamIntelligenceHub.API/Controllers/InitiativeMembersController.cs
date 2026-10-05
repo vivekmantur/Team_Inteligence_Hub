@@ -30,6 +30,7 @@ public class InitiativeMembersController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>Returns the Initiative's team members.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAll(int initiativeId)
     {
@@ -45,6 +46,7 @@ public class InitiativeMembersController : ControllerBase
         }
     }
 
+    /// <summary>Adds a team member to the Initiative and returns it with 201 Created.</summary>
     [HttpPost]
     public async Task<IActionResult> Add(
         int initiativeId,
@@ -72,6 +74,7 @@ public class InitiativeMembersController : ControllerBase
         }
     }
 
+    /// <summary>Updates a team member on the Initiative.</summary>
     [HttpPut("{memberId:int}")]
     public async Task<IActionResult> Update(
         int initiativeId,
@@ -95,6 +98,7 @@ public class InitiativeMembersController : ControllerBase
         }
     }
 
+    /// <summary>Removes a team member from the Initiative.</summary>
     [HttpDelete("{memberId:int}")]
     public async Task<IActionResult> Remove(int initiativeId, int memberId)
     {

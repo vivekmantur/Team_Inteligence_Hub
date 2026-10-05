@@ -93,6 +93,7 @@ public class UpdateContributionRequestDto : CreateContributionRequestDto
 {
 }
 
+/// <summary>A person credited on a contribution, as sent by the client.</summary>
 public class ContributionContributorRequestDto
 {
     [Range(1, int.MaxValue, ErrorMessage = "Contributor is not a valid user.")]
@@ -107,6 +108,7 @@ public class ContributionContributorRequestDto
     public bool IsPrimary { get; set; }
 }
 
+/// <summary>An external link attached to a contribution as evidence.</summary>
 public class ContributionLinkRequestDto
 {
     public ContributionLinkSource Source { get; set; }
@@ -128,6 +130,7 @@ public class ContributionLinkRequestDto
     public string? Description { get; set; }
 }
 
+/// <summary>The business metric section of a contribution.</summary>
 public class ContributionMetricRequestDto
 {
     [Required(ErrorMessage = "Metric name is required.")]
@@ -152,6 +155,7 @@ public class ContributionMetricRequestDto
     public string? ReportingPeriod { get; set; }
 }
 
+/// <summary>The risk section of a contribution.</summary>
 public class ContributionRiskRequestDto
 {
     [Required(ErrorMessage = "Risk description is required.")]
@@ -179,6 +183,7 @@ public class ContributionRiskRequestDto
     public DateOnly? TargetResolutionDate { get; set; }
 }
 
+/// <summary>The AI best practice section of a contribution.</summary>
 public class ContributionAiPracticeRequestDto
 {
     [Required(ErrorMessage = "AI tool is required.")]
@@ -199,6 +204,7 @@ public class ContributionAiPracticeRequestDto
     public string? Recommendation { get; set; }
 }
 
+/// <summary>The customer story section of a contribution.</summary>
 public class ContributionCustomerStoryRequestDto
 {
     [Required(ErrorMessage = "Customer name is required.")]
@@ -220,6 +226,7 @@ public class ContributionCustomerStoryRequestDto
     public string? BusinessValue { get; set; }
 }
 
+/// <summary>The testimonial section of a contribution.</summary>
 public class ContributionTestimonialRequestDto
 {
     [Required(ErrorMessage = "Quote is required.")]
@@ -248,6 +255,7 @@ public class ContributionTestimonialRequestDto
 // Responses
 // ---------------------------------------------------------------------------
 
+/// <summary>One contribution with its whole graph: credited people, links, attachments, and detail sections.</summary>
 public class ContributionResponseDto
 {
     public int Id { get; set; }
@@ -305,6 +313,7 @@ public class ContributionResponseDto
     public ContributionTestimonialDto? Testimonial { get; set; }
 }
 
+/// <summary>A person credited on a contribution.</summary>
 public class ContributionContributorDto
 {
     public int Id { get; set; }
@@ -320,6 +329,7 @@ public class ContributionContributorDto
     public DateTime AddedAt { get; set; }
 }
 
+/// <summary>An external link attached to a contribution.</summary>
 public class ContributionLinkDto
 {
     public int Id { get; set; }
@@ -335,6 +345,7 @@ public class ContributionLinkDto
     public DateTime CreatedAt { get; set; }
 }
 
+/// <summary>Metadata for a file attached to a contribution.</summary>
 public class ContributionAttachmentDto
 {
     public int Id { get; set; }
@@ -351,6 +362,7 @@ public class ContributionAttachmentDto
     public DateTime CreatedAt { get; set; }
 }
 
+/// <summary>The business metric section of a contribution.</summary>
 public class ContributionMetricDto
 {
     public string MetricName { get; set; } = null!;
@@ -364,6 +376,7 @@ public class ContributionMetricDto
     public string? ReportingPeriod { get; set; }
 }
 
+/// <summary>The risk section of a contribution, with the owner's display name.</summary>
 public class ContributionRiskDto
 {
     public string Description { get; set; } = null!;
@@ -383,6 +396,7 @@ public class ContributionRiskDto
     public DateOnly? TargetResolutionDate { get; set; }
 }
 
+/// <summary>The AI best practice section of a contribution.</summary>
 public class ContributionAiPracticeDto
 {
     public string Tool { get; set; } = null!;
@@ -396,6 +410,7 @@ public class ContributionAiPracticeDto
     public string? Recommendation { get; set; }
 }
 
+/// <summary>The customer story section of a contribution.</summary>
 public class ContributionCustomerStoryDto
 {
     public string CustomerName { get; set; } = null!;
@@ -409,6 +424,7 @@ public class ContributionCustomerStoryDto
     public string? BusinessValue { get; set; }
 }
 
+/// <summary>The testimonial section of a contribution.</summary>
 public class ContributionTestimonialDto
 {
     public string Quote { get; set; } = null!;

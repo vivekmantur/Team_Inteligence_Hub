@@ -5,6 +5,10 @@ using TeamIntelligenceHub.Domain.Enums;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Repositories;
 
+/// <summary>
+/// EF Core implementation of IDocumentTestimonialAndCustomerStoryRepository for rows
+/// extracted from attachments of submitted contributions.
+/// </summary>
 public class DocumentTestimonialAndCustomerStoryRepository
     : IDocumentTestimonialAndCustomerStoryRepository
 {

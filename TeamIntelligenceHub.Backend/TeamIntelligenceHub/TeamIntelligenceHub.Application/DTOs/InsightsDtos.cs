@@ -22,6 +22,7 @@ public class ReadinessInsightsDto
     public List<EnterpriseRoleCoverageDto> RoleCoverage { get; set; } = [];
 }
 
+/// <summary>How many Initiatives name one enterprise role, and how many of those are high impact.</summary>
 public class EnterpriseRoleCoverageDto
 {
     /// <summary>The EnterpriseRole member name (e.g. "AE"). The client owns the display label.</summary>

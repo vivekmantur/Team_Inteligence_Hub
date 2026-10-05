@@ -4,6 +4,9 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Repositories;
 
+/// <summary>
+/// EF Core implementation of IContributionAttachmentRepository for attachment metadata rows.
+/// </summary>
 public class ContributionAttachmentRepository : IContributionAttachmentRepository
 {
     private readonly TeamIntelligenceHubDbContext _context;

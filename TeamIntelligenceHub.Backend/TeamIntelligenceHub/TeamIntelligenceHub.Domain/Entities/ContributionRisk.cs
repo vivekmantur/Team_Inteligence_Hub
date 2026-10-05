@@ -8,9 +8,9 @@ namespace TeamIntelligenceHub.Domain.Entities;
 /// <remarks>
 /// Shared primary key with Contribution, so the row cannot outlive it.
 ///
-/// The owner is a real user rather than the typed-in name the wizard collects today,
-/// which turns "risks I own" into a query instead of a string match. Nullable so an
-/// unassigned risk can still be recorded.
+/// The owner is a real user rather than a typed-in name, which turns "risks I own" into
+/// a query instead of a string match. Nullable so an unassigned risk can still be
+/// recorded.
 /// </remarks>
 public class ContributionRisk
 {

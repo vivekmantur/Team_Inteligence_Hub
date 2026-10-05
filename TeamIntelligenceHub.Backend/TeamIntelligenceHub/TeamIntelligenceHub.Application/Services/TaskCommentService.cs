@@ -7,6 +7,10 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Application.Services;
 
+/// <summary>
+/// Manages comments and one-level replies on a task, including mentions and cleanup of
+/// attached files on delete.
+/// </summary>
 public class TaskCommentService : ITaskCommentService
 {
     private readonly ITaskCommentRepository _commentRepository;
@@ -250,7 +254,7 @@ public class TaskCommentService : ITaskCommentService
                     DisplayName = m.MentionedUser?.DisplayName ?? string.Empty
                 })
                 .ToList(),
-            // Populated once attachments are wired; the column set already exists.
+            // Metadata only; the file itself is fetched through the attachment download.
             Attachments = comment.Attachments
                 .Select(a => new TaskCommentAttachmentDto
                 {

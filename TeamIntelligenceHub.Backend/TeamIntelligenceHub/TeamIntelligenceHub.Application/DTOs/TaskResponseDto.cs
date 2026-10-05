@@ -2,6 +2,7 @@
 
 namespace TeamIntelligenceHub.Application.DTOs;
 
+/// <summary>One task on an Initiative, with assignee and creator display names.</summary>
 public class TaskResponseDto
 {
     public int Id { get; set; }

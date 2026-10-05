@@ -10,13 +10,13 @@ namespace TeamIntelligenceHub.Application.Services;
 
 /// <summary>
 /// Loads an Initiative's structured data, builds the format-specific prompt, and asks
-/// Azure OpenAI to generate one piece of Content Studio output.
+/// the chat model, through IChatCompletionClient, for one piece of Content Studio output.
 /// </summary>
 /// <remarks>
-/// Structured data only, for every format — Blog and CaseStudy included. No
-/// IVectorSearchClient or IEmbeddingClient dependency exists on this service at all:
-/// nothing here can retrieve an attachment. Initiative-scoped RAG for Blog/CaseStudy is a
-/// separate follow-up feature, not started here.
+/// Structured data only, for every format, Blog and CaseStudy included. The service has
+/// no IVectorSearchClient or IEmbeddingClient dependency, so nothing here can retrieve an
+/// attachment. Initiative-scoped document retrieval for Blog/CaseStudy is a separate
+/// feature outside this service.
 /// </remarks>
 public class ContentGenerationService : IContentGenerationService
 {
@@ -76,10 +76,9 @@ public class ContentGenerationService : IContentGenerationService
     }
 
     /// <summary>
-    /// [Required] on the request DTO already rejects a missing value for a caller coming
-    /// through the controller; this covers the service being called directly (e.g. from
-    /// tests) without one, matching InitiativeService/ContributionService's own re-check
-    /// of their "required" request fields.
+    /// [Required] on the request DTO rejects a missing value for a caller coming through
+    /// the controller; this re-check keeps the service safe to call directly (e.g. from
+    /// tests), where no model validation runs.
     /// </summary>
     private static (
         ContentFormat Format, ContentTone Tone, ContentAudience Audience, ContentLength Length)
@@ -93,7 +92,7 @@ public class ContentGenerationService : IContentGenerationService
         return (format, tone, audience, length);
     }
 
-    /// <summary>Trims and turns whitespace-only into null, matching ContributionService's Clean.</summary>
+    /// <summary>Trims and turns whitespace-only into null, so a blank instruction adds nothing to the prompt.</summary>
     private static string? Clean(string? value)
     {
         var trimmed = value?.Trim();
@@ -102,11 +101,9 @@ public class ContentGenerationService : IContentGenerationService
     }
 
     /// <summary>
-    /// Maps the request's validated PreviousTurns DTOs to the prompt builder's own
-    /// ContentGenerationTurn type. ContentPromptBuilder takes no dependency on
-    /// Application.DTOs (it stays pure and testable without one), so this mapping — not a
-    /// shared type — is what keeps the two layers decoupled. Not appended to or persisted
-    /// anywhere: this request's turns exist only for the duration of this call.
+    /// Maps the request's PreviousTurns DTOs to ContentGenerationTurn, so the prompt
+    /// builder stays free of any dependency on Application.DTOs. The turns are not
+    /// persisted; they live only for this call.
     /// </summary>
     private static List<ContentGenerationTurn>? MapPreviousTurns(
         List<ContentGenerationTurnDto>? previousTurns)

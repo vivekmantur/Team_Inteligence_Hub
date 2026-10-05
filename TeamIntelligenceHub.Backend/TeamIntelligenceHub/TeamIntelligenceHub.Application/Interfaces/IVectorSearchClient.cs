@@ -6,8 +6,10 @@ namespace TeamIntelligenceHub.Application.Interfaces;
 /// </summary>
 public class RetrievedChunk
 {
+    /// <summary>The chunk's text.</summary>
     public string Content { get; set; } = null!;
 
+    /// <summary>The title of the document the chunk belongs to, when the index has one.</summary>
     public string? Title { get; set; }
 
     /// <summary>Where this chunk came from — a file path or URL, for citing back to the user.</summary>
@@ -29,11 +31,12 @@ public class RetrievedChunk
 /// </remarks>
 public interface IVectorSearchClient
 {
+    /// <summary>Returns the indexed chunks nearest the query vector.</summary>
     /// <param name="queryVector">The embedded query to search near.</param>
     /// <param name="searchText">
     /// When supplied, the implementation runs a hybrid search — keyword relevance (BM25)
-    /// fused with vector relevance — instead of vector search alone. Null preserves the
-    /// original vector-only behavior.
+    /// fused with vector relevance — instead of vector search alone. Null runs a
+    /// vector-only search.
     /// </param>
     /// <param name="sourceBlobName">
     /// When supplied, restricts the search to the single document with this name/path,

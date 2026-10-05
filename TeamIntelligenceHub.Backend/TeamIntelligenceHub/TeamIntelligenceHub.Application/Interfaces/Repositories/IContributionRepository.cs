@@ -2,6 +2,10 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Application.Interfaces.Repositories;
 
+/// <summary>
+/// Stores and loads contributions together with their credited people, links, and
+/// detail sections.
+/// </summary>
 public interface IContributionRepository
 {
     /// <summary>Loads one contribution with its whole graph.</summary>
@@ -28,10 +32,13 @@ public interface IContributionRepository
     /// </summary>
     Task<List<Contribution>> GetTestimonialsAsync();
 
+    /// <summary>Inserts the root contribution row and returns it with its generated id.</summary>
     Task<Contribution> AddAsync(Contribution contribution);
 
+    /// <summary>Saves changes to the root contribution row.</summary>
     Task UpdateAsync(Contribution contribution);
 
+    /// <summary>Deletes the contribution; its child rows cascade in the database.</summary>
     Task RemoveAsync(Contribution contribution);
 
     /// <summary>
@@ -69,7 +76,7 @@ public interface IContributionRepository
     /// <remarks>
     /// Without this every author invents their own spelling and the tag column stops
     /// being useful for filtering. Translates to CROSS APPLY OPENJSON over the Tags
-    /// column, which is a scan; fine at this scale, and the alternative was a table.
+    /// column, which is a scan; fine at this scale, and it avoids a separate tag table.
     /// </remarks>
     Task<List<string>> GetTagVocabularyAsync(string? search, int take);
 }

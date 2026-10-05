@@ -2,6 +2,10 @@
 
 namespace TeamIntelligenceHub.Domain.Entities;
 
+/// <summary>
+/// A body of work the team plans and tracks, with an owner, optional executive sponsor,
+/// date range, status, and the members, tasks, activity posts, and contributions under it.
+/// </summary>
 public class Initiative
 {
     // Single source of truth for field limits, shared with the EF configuration and
@@ -13,7 +17,10 @@ public class Initiative
     public const int EnumValueMaxLength = 50;
     public const int LongTextMaxLength = 4000;
 
-    /// <summary>Ceiling on serialised ImpactedRoles JSON, in characters — see Contribution.TagsMaxLength for why this is bounded rather than nvarchar(max).</summary>
+    /// <summary>
+    /// Ceiling on serialised ImpactedRoles JSON, in characters. See
+    /// Contribution.TagsMaxLength for why this is bounded rather than nvarchar(max).
+    /// </summary>
     public const int ImpactedRolesMaxLength = 200;
 
     /// <summary>Longest span an Initiative may cover. Catches a mistyped year.</summary>
@@ -43,7 +50,9 @@ public class Initiative
 
     public InitiativeSegment Segment { get; set; }
 
-    /// <summary>Enterprise roles this Initiative's change lands on. Empty when none are flagged yet.</summary>
+    /// <summary>
+    /// Enterprise roles this Initiative's change lands on. Empty when none are flagged.
+    /// </summary>
     public List<EnterpriseRole> ImpactedRoles { get; set; } = new();
 
     public InitiativeChangeImpact ChangeImpact { get; set; }

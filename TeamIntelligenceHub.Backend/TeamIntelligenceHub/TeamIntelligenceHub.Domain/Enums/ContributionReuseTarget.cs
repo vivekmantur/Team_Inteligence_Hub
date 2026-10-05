@@ -5,8 +5,8 @@
 /// </summary>
 /// <remarks>
 /// Metadata, not access control. Selecting a target does not publish anything; it records
-/// the author's consent for that surface to use the material. Distinct from
-/// InitiativeVisibility, which does govern who can see an Initiative.
+/// the author's consent for that surface to use the material. It does not affect who can
+/// see the contribution.
 /// </remarks>
 public enum ContributionReuseTarget
 {

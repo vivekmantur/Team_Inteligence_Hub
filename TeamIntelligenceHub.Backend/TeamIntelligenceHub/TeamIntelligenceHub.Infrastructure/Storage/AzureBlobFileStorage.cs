@@ -37,7 +37,7 @@ public class AzureBlobFileStorage : IFileStorage
     /// Resolves the client for an area, creating the container on first use.
     /// </summary>
     /// <remarks>
-    /// Lazy so the API still starts when storage is unconfigured — only attachment
+    /// Lazy so the API still starts when storage is unconfigured; only attachment
     /// endpoints fail, and they say what is missing.
     ///
     /// PublicationOnly matters: the default mode caches the exception, so one bad
@@ -73,7 +73,7 @@ public class AzureBlobFileStorage : IFileStorage
 
             var container = serviceClient.GetBlobContainerClient(containerName);
 
-            // Private by default — attachments are read back through the API, which
+            // Private by default: attachments are read back through the API, which
             // checks the caller first. A public container would make files guessable.
             container.CreateIfNotExists(PublicAccessType.None);
 
@@ -104,7 +104,7 @@ public class AzureBlobFileStorage : IFileStorage
         // attacker-supplied name could otherwise traverse the container or overwrite
         // someone else's file. A sanitized slug of the original name is appended after
         // the GUID purely so the blob's own name stays readable downstream (e.g. in
-        // Azure AI Search citations, which index metadata_storage_name) — it plays no
+        // Azure AI Search citations, which index metadata_storage_name); it plays no
         // role in uniqueness or path safety, both of which the GUID alone guarantees.
         //
         // Separators are written literally rather than through a date format string,
@@ -154,6 +154,9 @@ public class AzureBlobFileStorage : IFileStorage
         }
     }
 
+    /// <summary>Longest filename slug kept in a blob name.</summary>
+    private const int MaxBlobNameSlugLength = 80;
+
     /// <summary>
     /// Keeps only characters safe in a blob name segment, so the result can never
     /// introduce a path separator or other traversal-relevant character regardless of
@@ -165,7 +168,9 @@ public class AzureBlobFileStorage : IFileStorage
         var sanitized = new string(
             name.Where(c => char.IsLetterOrDigit(c) || c is '-' or '_').ToArray());
 
-        return sanitized.Length > 80 ? sanitized[..80] : sanitized;
+        return sanitized.Length > MaxBlobNameSlugLength
+            ? sanitized[..MaxBlobNameSlugLength]
+            : sanitized;
     }
 
     public async Task<Stream> DownloadAsync(

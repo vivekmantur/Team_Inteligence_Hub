@@ -7,6 +7,10 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Application.Services;
 
+/// <summary>
+/// Stores, serves, and removes files attached to contributions, and queues each new
+/// upload for document extraction.
+/// </summary>
 public class ContributionAttachmentService : IContributionAttachmentService
 {
     /// <summary>

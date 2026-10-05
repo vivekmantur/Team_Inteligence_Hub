@@ -4,6 +4,10 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Repositories;
 
+/// <summary>
+/// EF Core implementation of ITaskCommentRepository, covering comments, their replies, and
+/// mentions.
+/// </summary>
 public class TaskCommentRepository : ITaskCommentRepository
 {
     private readonly TeamIntelligenceHubDbContext _context;

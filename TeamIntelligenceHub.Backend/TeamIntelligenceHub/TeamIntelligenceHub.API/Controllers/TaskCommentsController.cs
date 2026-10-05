@@ -48,6 +48,7 @@ public class TaskCommentsController : ControllerBase
         }
     }
 
+    /// <summary>Adds a comment to the task and returns it with 201 Created.</summary>
     [HttpPost]
     public async Task<IActionResult> Create(
         int taskId,
@@ -75,6 +76,7 @@ public class TaskCommentsController : ControllerBase
         }
     }
 
+    /// <summary>Updates a comment on the task.</summary>
     [HttpPut("{commentId:int}")]
     public async Task<IActionResult> Update(
         int taskId,

@@ -4,6 +4,10 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Infrastructure.Persistence.Repositories;
 
+/// <summary>
+/// EF Core implementation of ITaskCommentAttachmentRepository for comment attachment metadata
+/// rows.
+/// </summary>
 public class TaskCommentAttachmentRepository : ITaskCommentAttachmentRepository
 {
     private readonly TeamIntelligenceHubDbContext _context;

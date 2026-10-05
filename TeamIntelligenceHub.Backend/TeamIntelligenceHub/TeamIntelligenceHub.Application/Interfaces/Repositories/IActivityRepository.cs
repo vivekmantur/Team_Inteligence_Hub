@@ -2,14 +2,21 @@ using TeamIntelligenceHub.Domain.Entities;
 
 namespace TeamIntelligenceHub.Application.Interfaces.Repositories;
 
+/// <summary>
+/// Stores and loads the posts on an Initiative's activity feed.
+/// </summary>
 public interface IActivityRepository
 {
+    /// <summary>Loads one post, or null when it does not exist.</summary>
     Task<Activity?> GetByIdAsync(int id);
 
+    /// <summary>Returns every post on one Initiative's feed.</summary>
     Task<List<Activity>> GetByInitiativeIdAsync(int initiativeId);
 
+    /// <summary>Inserts a new post and returns it with its generated id.</summary>
     Task<Activity> AddAsync(Activity activity);
 
+    /// <summary>Saves changes to an existing post.</summary>
     Task UpdateAsync(Activity activity);
 
     /// <summary>
@@ -23,5 +30,6 @@ public interface IActivityRepository
     /// </remarks>
     Task RemoveAsync(Activity activity);
 
+    /// <summary>Swaps the post's mentioned people for a new set.</summary>
     Task ReplaceMentionsAsync(int activityId, IReadOnlyCollection<int> mentionedUserIds);
 }

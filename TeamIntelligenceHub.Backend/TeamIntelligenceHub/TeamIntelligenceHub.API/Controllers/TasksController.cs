@@ -29,6 +29,7 @@ public class TasksController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>Returns the Initiative's tasks.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAll(int initiativeId)
     {
@@ -44,6 +45,7 @@ public class TasksController : ControllerBase
         }
     }
 
+    /// <summary>Returns the task with the given id, or 404 when it does not exist.</summary>
     [HttpGet("{taskId:int}")]
     public async Task<IActionResult> GetById(int initiativeId, int taskId)
     {
@@ -59,6 +61,7 @@ public class TasksController : ControllerBase
         }
     }
 
+    /// <summary>Creates a task on the Initiative and returns it with 201 Created.</summary>
     [HttpPost]
     public async Task<IActionResult> Create(
         int initiativeId,
@@ -89,6 +92,7 @@ public class TasksController : ControllerBase
         }
     }
 
+    /// <summary>Updates a task on the Initiative.</summary>
     [HttpPut("{taskId:int}")]
     public async Task<IActionResult> Update(
         int initiativeId,
@@ -111,6 +115,7 @@ public class TasksController : ControllerBase
         }
     }
 
+    /// <summary>Deletes a task from the Initiative.</summary>
     [HttpDelete("{taskId:int}")]
     public async Task<IActionResult> Remove(int initiativeId, int taskId)
     {

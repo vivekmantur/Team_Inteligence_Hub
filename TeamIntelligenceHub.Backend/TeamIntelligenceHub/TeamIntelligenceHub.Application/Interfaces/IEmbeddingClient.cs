@@ -10,6 +10,7 @@ namespace TeamIntelligenceHub.Application.Interfaces;
 /// </remarks>
 public interface IEmbeddingClient
 {
+    /// <summary>Returns the embedding vector for the given text.</summary>
     Task<ReadOnlyMemory<float>> EmbedAsync(
         string text,
         CancellationToken cancellationToken = default);

@@ -34,7 +34,7 @@ public class InitiativeMemberConfiguration
             .HasColumnType("decimal(5,2)");
 
         // datetime2 stores no offset, so EF hands this back as Unspecified and it
-        // serialises without a "Z" — the browser would then read UTC as local time.
+        // serialises without a "Z", so the browser would read UTC as local time.
         builder.Property(x => x.JoinedAt)
             .HasColumnType("datetime2")
             .HasConversion(new ValueConverter<DateTime, DateTime>(

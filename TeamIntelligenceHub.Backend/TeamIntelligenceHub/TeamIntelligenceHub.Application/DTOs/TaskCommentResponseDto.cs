@@ -1,5 +1,6 @@
 ﻿namespace TeamIntelligenceHub.Application.DTOs;
 
+/// <summary>A person mentioned in a comment.</summary>
 public class TaskCommentMentionDto
 {
     public int MentionedUserId { get; set; }
@@ -7,6 +8,7 @@ public class TaskCommentMentionDto
     public string DisplayName { get; set; } = null!;
 }
 
+/// <summary>Metadata for a file attached to a comment.</summary>
 public class TaskCommentAttachmentDto
 {
     public int Id { get; set; }
@@ -20,6 +22,7 @@ public class TaskCommentAttachmentDto
     public DateTime CreatedAt { get; set; }
 }
 
+/// <summary>One comment or reply on a task, with its mentions and attachments.</summary>
 public class TaskCommentResponseDto
 {
     public int Id { get; set; }

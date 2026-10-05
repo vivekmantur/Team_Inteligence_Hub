@@ -9,7 +9,7 @@ namespace TeamIntelligenceHub.Infrastructure.AI;
 /// blank to authenticate with a managed identity instead via DefaultAzureCredential.
 ///
 /// The field names default to what the "Import and vectorize data" wizard in the Azure
-/// portal names them. Override the ones that differ in appsettings.json — these are index
+/// portal names them. Override the ones that differ in appsettings.json; these are index
 /// schema, not secrets, so they belong in source control rather than user secrets.
 /// </remarks>
 public class AzureAiSearchOptions
@@ -34,11 +34,9 @@ public class AzureAiSearchOptions
     public string? TitleField { get; set; } = "title";
 
     /// <summary>
-    /// Field holding the source file path or URL, if the index has one. Null by default —
-    /// unlike ContentField/VectorField/TitleField, indexes built without the blob indexer's
-    /// metadata fields commonly have nothing here (e.g. just chunk_id/parent_id/chunk/
-    /// title/text_vector), so guessing a name would break the $select clause outright
-    /// instead of degrading to "no source shown".
+    /// Field holding the source file path or URL, if the index has one. Null by default:
+    /// indexes built without the blob indexer's metadata fields often lack one, and a
+    /// guessed name would break the $select clause instead of just showing no source.
     /// </summary>
     public string? SourceField { get; set; }
 

@@ -11,10 +11,9 @@ namespace TeamIntelligenceHub.API.Controllers;
 /// on one Initiative's own data.
 /// </summary>
 /// <remarks>
-/// Separate from InitiativesController on purpose: this depends on the Azure OpenAI chat
-/// client rather than InitiativesController's CRUD concerns, the same reason
-/// CopilotController is its own controller rather than living on Initiatives or
-/// Contributions.
+/// Separate from InitiativesController on purpose: this depends on the chat-completion
+/// provider rather than CRUD concerns, the same reason CopilotController is its own
+/// controller rather than living on Initiatives or Contributions.
 /// </remarks>
 [ApiController]
 [Authorize]
@@ -32,6 +31,7 @@ public class ContentGenerationController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>Generates content in the requested format for the Initiative, or returns 502 when the provider fails.</summary>
     [HttpPost]
     public async Task<IActionResult> Generate(
         int initiativeId,

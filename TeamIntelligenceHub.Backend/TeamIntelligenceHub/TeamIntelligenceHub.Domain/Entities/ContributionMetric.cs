@@ -8,8 +8,8 @@ namespace TeamIntelligenceHub.Domain.Entities;
 /// makes the 1:1 real: the row cannot exist without its contribution, and there cannot be
 /// two of them.
 ///
-/// Previous and current are decimal rather than the free text the wizard collects today,
-/// so Analytics can compute the delta instead of only displaying it.
+/// Previous and current are decimal rather than free text, so Analytics can compute the
+/// delta instead of only displaying it.
 /// </remarks>
 public class ContributionMetric
 {

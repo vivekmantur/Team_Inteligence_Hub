@@ -1,5 +1,6 @@
 ﻿namespace TeamIntelligenceHub.Application.DTOs;
 
+/// <summary>One user, with their allocation summed across Initiatives.</summary>
 public class UserResponseDto
 {
     public int Id { get; set; }

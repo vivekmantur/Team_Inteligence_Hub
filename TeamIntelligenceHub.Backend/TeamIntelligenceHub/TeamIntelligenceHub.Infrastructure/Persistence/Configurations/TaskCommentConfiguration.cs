@@ -61,7 +61,7 @@ public class TaskCommentConfiguration : IEntityTypeConfiguration<TaskComment>
             .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // SQL Server forbids cascade on a self-referencing key — it would be a cycle.
+        // SQL Server forbids cascade on a self-referencing key, since it would be a cycle.
         // Deleting a comment that has replies is therefore blocked at the database, and
         // the service removes replies first.
         builder.HasOne(x => x.ParentComment)

@@ -26,14 +26,11 @@ public class StorageQueueDocumentInsightExtractionQueue : IDocumentInsightExtrac
     /// How long a message stays invisible before the Function can dequeue it.
     /// </summary>
     /// <remarks>
-    /// Azure AI Search only picks up a newly uploaded blob when its indexer next runs —
-    /// on a 30-minute timer schedule here — and there is no event or webhook the app can
-    /// wait on instead; the indexer is entirely out-of-band and portal-managed. Without
-    /// this delay the Function would dequeue and search immediately, before the document
-    /// exists in the index at all, and find nothing. 35 minutes covers one full 30-minute
-    /// schedule interval (worst case: the blob lands the instant after a run starts) plus
-    /// a few minutes' buffer for the indexer itself to finish processing it. If the
-    /// indexer's schedule changes, this should change with it.
+    /// Azure AI Search indexes a new blob only when its portal-managed indexer next runs,
+    /// every 30 minutes here, and the app has no event to wait on. Without this delay the
+    /// Function would search before the document is indexed and find nothing. 35 minutes
+    /// covers one full interval plus a few minutes for the indexer to finish. Keep it in
+    /// step with the indexer's schedule.
     /// </remarks>
     private static readonly TimeSpan IndexingLagVisibilityDelay = TimeSpan.FromMinutes(35);
 

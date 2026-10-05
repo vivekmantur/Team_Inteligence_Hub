@@ -9,6 +9,7 @@ namespace TeamIntelligenceHub.Application.Interfaces;
 /// </remarks>
 public interface IChatCompletionClient
 {
+    /// <summary>Returns the model's answer to the user prompt, under the rules the system prompt sets.</summary>
     Task<string> CompleteAsync(
         string systemPrompt,
         string userPrompt,

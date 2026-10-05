@@ -46,6 +46,7 @@ public sealed class ContentGenerationContext
     public string? InitiativeKeyObjective { get; init; }
 }
 
+/// <summary>One business metric with its before and after values.</summary>
 public sealed class MetricContext
 {
     public string MetricName { get; init; } = null!;
@@ -57,6 +58,7 @@ public sealed class MetricContext
     public decimal? CurrentValue { get; init; }
 }
 
+/// <summary>A customer quote and the customer it came from.</summary>
 public sealed class CustomerQuoteContext
 {
     public string CustomerName { get; init; } = null!;
@@ -64,6 +66,7 @@ public sealed class CustomerQuoteContext
     public string? Quote { get; init; }
 }
 
+/// <summary>The fields of one customer story.</summary>
 public sealed class CustomerStoryContext
 {
     public string CustomerName { get; init; } = null!;
@@ -77,6 +80,7 @@ public sealed class CustomerStoryContext
     public string? BusinessValue { get; init; }
 }
 
+/// <summary>One risk with its severity and business impact.</summary>
 public sealed class RiskContext
 {
     public string Description { get; init; } = null!;
@@ -86,6 +90,7 @@ public sealed class RiskContext
     public string? BusinessImpact { get; init; }
 }
 
+/// <summary>One AI best practice: the tool, its use case, and the time it saves.</summary>
 public sealed class AiPracticeContext
 {
     public string Tool { get; init; } = null!;
@@ -95,6 +100,7 @@ public sealed class AiPracticeContext
     public decimal? TimeSavedHoursPerWeek { get; init; }
 }
 
+/// <summary>A contribution's base narrative fields.</summary>
 public sealed class ContributionSummaryContext
 {
     public string Title { get; init; } = null!;

@@ -4,18 +4,15 @@ using TeamIntelligenceHub.Domain.Enums;
 namespace TeamIntelligenceHub.Application.Services.ContentGeneration;
 
 /// <summary>
-/// The system and user prompt Azure OpenAI will eventually receive for one generation —
-/// not yet sent anywhere. Slice 4 is what actually calls IChatCompletionClient with this.
+/// The system and user prompt for one generation, ready to pass to IChatCompletionClient.
 /// </summary>
 public sealed record ContentPrompt(string SystemPrompt, string UserPrompt);
 
 /// <summary>
 /// One prior successful instruction/output pair to render into the user prompt ahead of
-/// the current instruction. Deliberately its own type rather than
-/// ContentGenerationTurnDto — ContentPromptBuilder takes no dependency on
-/// Application.DTOs, the same way it takes none on EF entities, so it stays pure and
-/// testable without either. Mapping from the DTO is the caller's job (ContentGenerationService,
-/// once a later slice wires this up).
+/// the current instruction. Its own type rather than ContentGenerationTurnDto, so
+/// ContentPromptBuilder depends on neither Application.DTOs nor EF entities and stays
+/// pure and testable. The caller maps from the DTO.
 /// </summary>
 public sealed record ContentGenerationTurn(string Instruction, string Output);
 
@@ -24,14 +21,10 @@ public sealed record ContentGenerationTurn(string Instruction, string Output);
 /// into the two strings a chat-completion call needs.
 /// </summary>
 /// <remarks>
-/// Pure and static, mirroring CopilotService.BuildPrompt's shape — no I/O, no EF
-/// entities in or out (ContentGenerationContextBuilder is the only place those are
-/// touched). Each format's system prompt is a fixed string literal, built entirely at
-/// compile time: nothing from the database can ever reach it. Every database-derived
-/// value goes into the user prompt instead, under a "Source material" heading the
-/// system prompt tells the model to treat as data, never as instructions — the same
-/// prompt-injection stance CopilotService.SystemPrompt already takes with retrieved
-/// chunks.
+/// Pure and static: no I/O and no EF entities. Each format's system prompt is a
+/// compile-time constant, so nothing from the database can reach it. Database-derived
+/// values go only into the user prompt, under a "Source material" heading the system
+/// prompt tells the model to treat as data, never as instructions (prompt-injection defense).
 /// </remarks>
 public static class ContentPromptBuilder
 {
@@ -40,9 +33,8 @@ public static class ContentPromptBuilder
 
     /// <summary>
     /// Longest the caller's own instructions may appear before being cut off. Matches
-    /// ContentGenerationRequestDto.InstructionsMaxLength — validation there already
-    /// rejects anything longer before it reaches this class, so this is a defensive
-    /// second cap for any direct caller that skips the DTO (tests, future callers).
+    /// ContentGenerationRequestDto.InstructionsMaxLength; DTO validation rejects anything
+    /// longer, so this is a defensive second cap for any direct caller that skips the DTO.
     /// </summary>
     public const int MaxInstructionsLength = 1000;
 
@@ -56,10 +48,9 @@ public static class ContentPromptBuilder
 
     /// <summary>
     /// Unlike Source material, the caller's own instructions are meant to steer the
-    /// output — but they still arrive as free text on an HTTP request, so the boundary
-    /// is the same shape as CopilotService's stance on retrieved content: follow them for
-    /// style and emphasis, but they cannot redefine the role or format this system prompt
-    /// already fixed.
+    /// output, but they still arrive as free text on an HTTP request. The model follows
+    /// them for style and emphasis, but they cannot redefine the role or format the
+    /// system prompt fixes.
     /// </summary>
     private const string UserInstructionsClause =
         " The user may also give instructions in the \"User instructions\" section " +
@@ -68,11 +59,10 @@ public static class ContentPromptBuilder
         "this point.";
 
     /// <summary>
-    /// Session Context Slice 2: explains how to treat the "Previous turn N instruction" /
-    /// "Previous turn N output" pairs a caller may include in the user prompt ahead of
-    /// the current instruction. Fixed and always present, the same way UserInstructionsClause
-    /// is always present regardless of whether a given call actually supplies any —
-    /// the model should already know the rule the first time a caller does.
+    /// Explains how to treat the "Previous turn N instruction" / "Previous turn N output"
+    /// pairs a caller may include in the user prompt ahead of the current instruction.
+    /// Always present, like UserInstructionsClause, whether or not a given call supplies
+    /// any turns, so the model knows the rule the first time a caller does.
     /// </summary>
     private const string PreviousTurnsClause =
         " The user prompt may also include earlier \"Previous turn\" instructions and " +
@@ -150,6 +140,10 @@ public static class ContentPromptBuilder
         "line rather than folding it into a paragraph. Use only what is given; do not " +
         "invent customers, outcomes, or quotes." + UntrustedContentClause + UserInstructionsClause + PreviousTurnsClause;
 
+    /// <summary>
+    /// Returns the system and user prompt for one generation. Throws
+    /// ArgumentOutOfRangeException for an unsupported format.
+    /// </summary>
     public static ContentPrompt Build(
         ContentFormat format,
         ContentGenerationContext context,
@@ -266,7 +260,7 @@ public static class ContentPromptBuilder
     /// Renders prior successful turns, oldest first, ahead of the current instruction —
     /// labeled per turn so the model can tell them apart and see the chronological order,
     /// and framed as untrusted context per PreviousTurnsClause on the system prompt. A
-    /// null or empty list leaves the prompt exactly as it was before this slice.
+    /// null or empty list adds nothing to the prompt.
     /// </summary>
     private static void AppendPreviousTurns(
         StringBuilder sb, IReadOnlyList<ContentGenerationTurn>? previousTurns)

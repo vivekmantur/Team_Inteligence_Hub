@@ -8,6 +8,10 @@ using TeamIntelligenceHub.Application.Interfaces;
 
 namespace TeamIntelligenceHub.Infrastructure.AI;
 
+/// <summary>
+/// Implements IChatCompletionClient by sending a system and user message to the configured
+/// Azure OpenAI chat deployment.
+/// </summary>
 public class AzureOpenAiChatClient : IChatCompletionClient
 {
     private readonly AzureOpenAiOptions _options;
